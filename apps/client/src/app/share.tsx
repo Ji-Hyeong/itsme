@@ -17,13 +17,32 @@ type PendingChange = { record: OwnerRecord; visibility: Visibility };
 
 export default function ShareScreen() {
   const router = useRouter();
-  const { profile, publicProfile, loading, saving, error, clearError, refresh, setVisibility } = useItsme();
+  const {
+    profile,
+    publicProfile,
+    loading,
+    saving,
+    error,
+    clearError,
+    refresh,
+    prepareVisibilityPreview,
+    clearVisibilityPreview,
+    setVisibility,
+  } = useItsme();
   const [pending, setPending] = useState<PendingChange | null>(null);
   const records = profile?.records ?? [];
 
   const confirmVisibility = async () => {
     if (!pending) return;
-    const saved = await setVisibility(pending.record.id, pending.visibility);
+    if (pending.visibility === 'public') {
+      const prepared = await prepareVisibilityPreview({
+        recordId: pending.record.id,
+        visibility: 'public',
+      });
+      if (prepared) router.push('/preview');
+      return;
+    }
+    const saved = await setVisibility({ recordId: pending.record.id, visibility: 'private' });
     if (saved) setPending(null);
   };
 
@@ -42,18 +61,19 @@ export default function ShareScreen() {
             <Heading style={styles.confirmationAnswer}>{getCurrentVersion(pending.record).answer}</Heading>
             <Body>
               {pending.visibility === 'public'
-                ? '이 항목이 공개 프로필에 추가됩니다. 과거 기록과 작성 맥락은 공개되지 않아요.'
+                ? '아직 공개되지는 않아요. 방문자와 같은 화면을 확인한 뒤에만 최종 공개할 수 있어요.'
                 : '이 항목은 방문자 화면에서 바로 사라집니다. 내 기록과 이력은 그대로 남아요.'}
             </Body>
             {error ? <Body style={styles.error}>{error}</Body> : null}
             <View style={styles.confirmationActions}>
               <ActionButton fullWidth loading={saving} onPress={() => void confirmVisibility()}>
-                {pending.visibility === 'public' ? '이 모습 공개하기' : '공개 해제하기'}
+                {pending.visibility === 'public' ? '공개 모습 확인하기' : '공개 해제하기'}
               </ActionButton>
               <ActionButton
                 disabled={saving}
                 onPress={() => {
                   clearError();
+                  clearVisibilityPreview();
                   setPending(null);
                 }}
                 fullWidth
@@ -99,6 +119,7 @@ export default function ShareScreen() {
                   accessibilityState={{ checked: isPublic }}
                   onPress={() => {
                     clearError();
+                    clearVisibilityPreview();
                     setPending({ record, visibility: isPublic ? 'private' : 'public' });
                   }}
                   style={({ focused, pressed }) => [
@@ -131,7 +152,16 @@ export default function ShareScreen() {
                 : '아직 공개한 이야기가 없어요. 이 상태도 온전한 공개 프로필이에요.'}
             </Body>
           </View>
-          <ActionButton fullWidth onPress={() => router.push('/preview')} tone="paper">실제 모습 미리보기</ActionButton>
+          <ActionButton
+            fullWidth
+            onPress={() => {
+              clearError();
+              clearVisibilityPreview();
+              router.push('/preview');
+            }}
+            tone="paper">
+            실제 모습 미리보기
+          </ActionButton>
         </View> : null}
       </Screen>
     </AppShell>

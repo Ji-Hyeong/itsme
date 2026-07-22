@@ -46,7 +46,6 @@ export type OwnerProfile = z.infer<typeof OwnerProfileSchema>;
  * 이 경계 덕분에 비공개 맥락, 변경 이유와 과거 버전이 실수로 직렬화될 수 없다.
  */
 export const PublicRecordSchema = z.strictObject({
-  id: z.string().min(1),
   category: CategorySchema,
   title: z.string().min(1),
   answer: z.string().min(1),
@@ -59,6 +58,12 @@ export const PublicProfileSchema = z.strictObject({
   records: z.array(PublicRecordSchema),
 });
 export type PublicProfile = z.infer<typeof PublicProfileSchema>;
+
+export const PublicProfilePreviewResponseSchema = z.strictObject({
+  previewToken: z.string().min(43).max(128),
+  expiresAt: z.iso.datetime(),
+  profile: PublicProfileSchema,
+});
 
 export const QuestionOptionSchema = z.strictObject({
   label: z.string().min(1),

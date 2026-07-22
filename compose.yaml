@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17.10-alpine
+    environment:
+      # These defaults are intentionally development-only. Production credentials must be
+      # injected by the deployment environment and must never be committed to the repository.
+      POSTGRES_DB: ${ITSME_DB_NAME:-itsme}
+      POSTGRES_USER: ${ITSME_DB_USER:-itsme}
+      POSTGRES_PASSWORD: ${ITSME_DB_PASSWORD:-itsme}
+    ports:
+      - "${ITSME_DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - itsme-postgres:/var/lib/postgresql/data
+
+volumes:
+  itsme-postgres:

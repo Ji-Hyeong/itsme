@@ -39,10 +39,13 @@ export function PublicProfileView({ profile }: { profile: PublicProfile }) {
         </View>
       ) : (
         <View style={styles.records}>
-          {profile.records.map((record) => {
+          {profile.records.map((record, index) => {
             const tone = publicTone[record.category];
             return (
-              <View key={record.id} style={[styles.record, { borderLeftColor: tone.accent }]}>
+              <View
+                // 공개 DTO에는 내부 식별자가 없으므로 응답 순서와 표시 필드만으로 렌더 key를 만든다.
+                key={`${index}:${record.category}:${record.title}`}
+                style={[styles.record, { borderLeftColor: tone.accent }]}>
                 <View style={[styles.recordHeader, largeText && styles.largeTextRecordHeader]}>
                   <Meta style={styles.category}>{categoryMeta[record.category].label}</Meta>
                   <Meta style={styles.title}>{record.title}</Meta>

@@ -1,0 +1,441 @@
+openapi: 3.1.0
+info:
+  title: it'sME API
+  version: 0.1.0
+  description: |
+    내부 알파용 계약의 단일 진실 공급원이다. 모든 시간은 UTC ISO-8601 instant로 전달한다.
+    신규 기록은 항상 private이며 공개 응답은 소유자 응답과 별도 projection을 사용한다.
+    질문과 현재 프로필은 알파의 제한된 데이터셋이므로 이 버전에서는 페이지네이션하지 않는다.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Authentication
+  - name: Questions
+  - name: Owner profile
+  - name: Records
+  - name: Public profile
+paths:
+  /v1/auth/login:
+    post:
+      tags: [Authentication]
+      operationId: login
+      summary: 초대 계정으로 로그인한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+            example: {email: invited@example.com, password: correct-horse-battery}
+      responses:
+        '200':
+          description: 생성된 기기별 세션. 마지막 인증 활동부터 7일간 유효하다.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SessionResponse'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/InvalidCredentials'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /v1/auth/me:
+    get:
+      tags: [Authentication]
+      operationId: getCurrentSessionUser
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: 현재 세션 사용자
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthUser'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+  /v1/auth/logout:
+    post:
+      tags: [Authentication]
+      operationId: logout
+      description: 현재 기기 세션을 즉시 무효화한다.
+      security: [{bearerAuth: []}]
+      responses:
+        '204': {description: 로그아웃 완료}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+  /v1/questions:
+    get:
+      tags: [Questions]
+      operationId: listQuestions
+      responses:
+        '200':
+          description: 활성 질문 전체 목록
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/QuestionListResponse'}
+  /v1/me/profile:
+    get:
+      tags: [Owner profile]
+      operationId: getOwnerProfile
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: 모든 공개 범위와 버전 이력을 포함한 소유자 전용 프로필
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OwnerProfile'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+    patch:
+      tags: [Owner profile]
+      operationId: updateOwnerProfile
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateProfileRequest'}
+      responses:
+        '200':
+          description: 변경된 소유자 프로필
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OwnerProfile'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+  /v1/me/records:
+    post:
+      tags: [Records]
+      operationId: createRecord
+      description: 공개 범위를 입력받지 않고 private 기록을 생성한다.
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateRecordRequest'}
+            example: {questionId: learning-now, answer: 천천히 쉬는 법, context: 주말의 나를 돌아보며}
+      responses:
+        '201':
+          description: 기록 생성 후 소유자 프로필
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OwnerProfile'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/me/records/{recordId}:
+    parameters:
+      - {$ref: '#/components/parameters/RecordId'}
+    patch:
+      tags: [Records]
+      operationId: updateRecord
+      description: 과거 버전을 보존해 새 버전을 추가하며, 공개 중이던 기록도 private으로 전환한다.
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateRecordRequest'}
+      responses:
+        '200':
+          description: 기록 수정 후 소유자 프로필
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OwnerProfile'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/VersionConflict'}
+    delete:
+      tags: [Records]
+      operationId: deleteRecord
+      description: 현재값, 모든 버전과 맥락을 영구 삭제한다. 서버는 공개 응답 캐시를 저장하지 않는다.
+      security: [{bearerAuth: []}]
+      responses:
+        '204': {description: 영구 삭제 완료}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/me/records/{recordId}/visibility:
+    parameters:
+      - {$ref: '#/components/parameters/RecordId'}
+    patch:
+      tags: [Records]
+      operationId: updateRecordVisibility
+      description: 저장과 분리된 명시적 행동으로 항목 공개 범위를 바꾼다.
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateVisibilityRequest'}
+      responses:
+        '200':
+          description: 공개 범위 변경 후 소유자 프로필
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OwnerProfile'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: public 전환에 필요한 미리보기가 없거나 만료 또는 버전 불일치
+          content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+  /v1/me/public-profile-preview:
+    post:
+      tags: [Public profile]
+      operationId: previewPublicProfile
+      description: 한 기록의 후보 공개 범위를 적용한 결과를 저장 없이 실제 공개 DTO로 투영한다.
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PublicProfilePreviewRequest'}
+            example: {recordId: 5c7b0959-c891-48eb-b63c-d893900f232d, visibility: public}
+      responses:
+        '200':
+          description: 후보 범위가 반영됐지만 저장되지 않은 공개 프로필과 1회용 승인 토큰
+          headers:
+            Cache-Control:
+              schema: {type: string, const: no-store}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PublicProfilePreviewResponse'}
+        '400': {$ref: '#/components/responses/InvalidInput'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/public/profiles/{slug}:
+    get:
+      tags: [Public profile]
+      operationId: getPublicProfile
+      description: 공개 상태인 기록의 최신 답변만 반환한다. 응답은 저장하거나 공유 캐시에 보관하지 않는다.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/Slug'}
+      responses:
+        '200':
+          description: 방문자와 소유자 미리보기가 함께 사용하는 공개 projection
+          headers:
+            Cache-Control:
+              schema: {type: string, const: no-store}
+            X-Robots-Tag:
+              schema: {type: string, const: 'noindex, nofollow, noarchive'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PublicProfile'}
+              example:
+                displayName: 지형
+                records:
+                  - {category: learning, title: 배우는 중, answer: 천천히 쉬는 법}
+        '404': {$ref: '#/components/responses/PublicNotFound'}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: 원문은 응답 시 한 번만 전달하고 서버에는 SHA-256 digest만 저장한다.
+  parameters:
+    RecordId:
+      name: recordId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  responses:
+    InvalidInput:
+      description: 요청 형식 또는 값이 올바르지 않음
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+    InvalidCredentials:
+      description: 계정 존재 여부를 구분하지 않는 로그인 실패
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+    Unauthenticated:
+      description: 세션이 없거나 만료 또는 무효화됨
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+    NotFound:
+      description: 리소스가 없거나 현재 사용자가 소유하지 않음
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+    Conflict:
+      description: 같은 질문의 기록 또는 고유 정보가 이미 존재함
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+    VersionConflict:
+      description: expectedVersionId가 서버의 최신 버전과 달라 수정이 거절됨
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+    RateLimited:
+      description: account hash와 직접 연결 IP 기준 로그인 실패 제한
+      headers:
+        Retry-After:
+          schema: {type: integer, minimum: 1}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+    PublicNotFound:
+      description: 공개 프로필을 찾지 못함
+      headers:
+        X-Robots-Tag:
+          schema: {type: string, const: 'noindex, nofollow, noarchive'}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}
+  schemas:
+    Category:
+      type: string
+      enum: [preference, personality, value, strength, learning, support]
+    Visibility:
+      type: string
+      enum: [private, public]
+      description: 향후 제한 공개 범위를 호환 가능하게 추가할 명시적 공개 정책 enum
+    Slug:
+      type: string
+      pattern: '^[a-z0-9][a-z0-9-]{2,47}$'
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: {type: string, format: email, maxLength: 320}
+        password: {type: string, minLength: 1, maxLength: 72, writeOnly: true}
+    AuthUser:
+      type: object
+      additionalProperties: false
+      required: [id, email, displayName, slug]
+      properties:
+        id: {type: string, format: uuid}
+        email: {type: string, format: email, maxLength: 320}
+        displayName: {type: string, minLength: 1, maxLength: 80}
+        slug: {$ref: '#/components/schemas/Slug'}
+    SessionResponse:
+      type: object
+      additionalProperties: false
+      required: [token, expiresAt, user]
+      properties:
+        token: {type: string, minLength: 43, maxLength: 43}
+        expiresAt: {type: string, format: date-time}
+        user: {$ref: '#/components/schemas/AuthUser'}
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName: {type: string, minLength: 1, maxLength: 80}
+        intro: {type: string, maxLength: 180}
+    QuestionOption:
+      type: object
+      additionalProperties: false
+      required: [label, value]
+      properties:
+        label: {type: string, minLength: 1, maxLength: 120}
+        value: {type: string, minLength: 1, maxLength: 120}
+        swatch: {type: string, pattern: '^#[0-9A-Fa-f]{6}$'}
+    Question:
+      type: object
+      additionalProperties: false
+      required: [id, category, chapter, title, prompt, kind]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 80}
+        category: {$ref: '#/components/schemas/Category'}
+        chapter: {type: string, minLength: 1, maxLength: 120}
+        title: {type: string, minLength: 1, maxLength: 120}
+        prompt: {type: string, minLength: 1, maxLength: 300}
+        kind: {type: string, enum: [choice, text]}
+        options: {type: array, items: {$ref: '#/components/schemas/QuestionOption'}}
+        guidance: {type: string, maxLength: 300}
+        placeholder: {type: string, maxLength: 300}
+    QuestionListResponse:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Question'}}
+    RecordVersion:
+      type: object
+      additionalProperties: false
+      required: [id, answer, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        answer: {type: string, minLength: 1, maxLength: 600}
+        context: {type: string, maxLength: 1200}
+        changedBecause: {type: string, maxLength: 1200}
+        nextStep: {type: string, maxLength: 600}
+        recordedAt: {type: string, format: date-time}
+    OwnerRecord:
+      type: object
+      additionalProperties: false
+      required: [id, questionId, category, title, visibility, versions]
+      properties:
+        id: {type: string, format: uuid}
+        questionId: {type: string, minLength: 1, maxLength: 80}
+        category: {$ref: '#/components/schemas/Category'}
+        title: {type: string, minLength: 1, maxLength: 120}
+        visibility: {$ref: '#/components/schemas/Visibility'}
+        versions: {type: array, minItems: 1, items: {$ref: '#/components/schemas/RecordVersion'}}
+    OwnerProfile:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, records]
+      properties:
+        id: {type: string, format: uuid}
+        displayName: {type: string, minLength: 1, maxLength: 80}
+        intro: {type: string, maxLength: 180}
+        records: {type: array, items: {$ref: '#/components/schemas/OwnerRecord'}}
+    CreateRecordRequest:
+      type: object
+      additionalProperties: false
+      required: [questionId, answer]
+      properties:
+        questionId: {type: string, minLength: 1, maxLength: 80}
+        answer: {type: string, minLength: 1, maxLength: 600}
+        context: {type: string, maxLength: 1200}
+    UpdateRecordRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersionId, answer]
+      properties:
+        expectedVersionId: {type: string, format: uuid}
+        answer: {type: string, minLength: 1, maxLength: 600}
+        changedBecause: {type: string, maxLength: 1200}
+        nextStep: {type: string, maxLength: 600}
+    UpdateVisibilityRequest:
+      type: object
+      additionalProperties: false
+      required: [visibility]
+      properties:
+        visibility: {$ref: '#/components/schemas/Visibility'}
+        previewToken: {type: string, minLength: 43, maxLength: 128, writeOnly: true}
+      allOf:
+        - if:
+            properties:
+              visibility: {const: public}
+          then:
+            required: [previewToken]
+    PublicProfilePreviewRequest:
+      type: object
+      additionalProperties: false
+      required: [recordId, visibility]
+      properties:
+        recordId: {type: string, format: uuid}
+        visibility: {$ref: '#/components/schemas/Visibility'}
+    PublicProfilePreviewResponse:
+      type: object
+      additionalProperties: false
+      required: [previewToken, expiresAt, profile]
+      properties:
+        previewToken: {type: string, minLength: 43, maxLength: 43}
+        expiresAt: {type: string, format: date-time}
+        profile: {$ref: '#/components/schemas/PublicProfile'}
+    PublicRecord:
+      type: object
+      additionalProperties: false
+      required: [category, title, answer]
+      properties:
+        category: {$ref: '#/components/schemas/Category'}
+        title: {type: string, minLength: 1, maxLength: 120}
+        answer: {type: string, minLength: 1, maxLength: 600}
+    PublicProfile:
+      type: object
+      additionalProperties: false
+      required: [displayName, records]
+      properties:
+        displayName: {type: string, minLength: 1, maxLength: 80}
+        intro: {type: string, maxLength: 180}
+        records: {type: array, items: {$ref: '#/components/schemas/PublicRecord'}}
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [code, message, timestamp]
+      properties:
+        code: {type: string, pattern: '^[A-Z][A-Z0-9_]+$'}
+        message: {type: string}
+        traceId: {type: string}
+        timestamp: {type: string, format: date-time}

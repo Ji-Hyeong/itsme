@@ -32,3 +32,4 @@ Backend는 OpenAPI 계약을 기준으로 연결한다. 인증, 오프라인 저
 
 - [ADR-001: Expo 유니버설 프로토타입](decisions/0001-expo-universal-prototype.md)
 - [ADR-002: 제품 클라이언트와 Backend 기술 스택](decisions/0002-client-and-backend-stack.md)
+- [ADR-003: 내부 알파 초대 계정과 불투명 세션](decisions/0003-internal-alpha-authentication.md)

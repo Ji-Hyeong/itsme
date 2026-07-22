@@ -31,6 +31,13 @@ export default function MeScreen() {
             <Meta>{formatCurrentMonth()}</Meta>
           </View>
           <FocusPressable
+            accessibilityLabel="계정 설정"
+            accessibilityRole="button"
+            onPress={() => router.push('./account')}
+            style={({ focused, pressed }) => [styles.accountLink, focused && styles.focused, pressed && styles.pressed]}>
+            <Text style={styles.accountLinkText}>계정</Text>
+          </FocusPressable>
+          <FocusPressable
             accessibilityLabel="다른 사람이 보는 공개 모습"
             accessibilityRole="button"
             onPress={() => router.push('/preview')}
@@ -95,10 +102,12 @@ function LoadingPortrait() {
 }
 
 const styles = StyleSheet.create({
-  pageHead: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md, marginBottom: space.md },
+  pageHead: { minHeight: 52, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm, marginBottom: space.md },
   pageTitle: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 21, letterSpacing: -0.5 },
   publicLink: { minHeight: layout.minTouch, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: 10, borderColor: 'transparent', borderWidth: 2, borderRadius: radii.md },
   publicLinkText: { color: colors.brandDeep, fontFamily: fonts.sansBold, fontSize: 14 },
+  accountLink: { minHeight: layout.minTouch, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto', paddingHorizontal: 10, borderColor: 'transparent', borderWidth: 2, borderRadius: radii.md },
+  accountLinkText: { color: colors.mutedInk, fontFamily: fonts.sansBold, fontSize: 14 },
   cover: { width: '100%', minHeight: 260, justifyContent: 'space-between', padding: space.lg, borderRadius: radii.xl, backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1 },
   coverTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space.md },
   mark: { opacity: 0.92 },

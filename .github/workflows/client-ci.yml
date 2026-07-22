@@ -1,0 +1,45 @@
+name: Client CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/client/**"
+      - "contracts/openapi/**"
+      - ".github/workflows/client-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/client/**"
+      - "contracts/openapi/**"
+      - ".github/workflows/client-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/client
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/client/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify generated API types
+        run: npm run generate:api && git diff --exit-code -- src/generated/itsme-api.ts
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Lint client
+        run: npm run lint
+      - name: Run client tests
+        run: npm test -- --runInBand
+      - name: Export web preview
+        run: npm run build:web
