@@ -1,0 +1,16 @@
+# OS and editor-local files
+.DS_Store
+.idea/
+
+# Secrets and machine-specific environment files
+.env
+.env.*
+!.env.example
+
+# Generated artifacts are rebuilt from tracked source.
+node_modules/
+.expo/
+dist/
+web-build/
+coverage/
+*.tsbuildinfo

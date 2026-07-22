@@ -1,0 +1,7 @@
+# 현재 로컬 작업공간의 동시 실행 한도에 맞춰 메인 에이전트와 최대 세 개의
+# 전문 에이전트가 한 번에 협업하도록 제한한다.
+[agents]
+max_threads = 4
+max_depth = 1
+interrupt_message = true
+
