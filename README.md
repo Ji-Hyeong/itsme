@@ -39,8 +39,12 @@ npm run web
 ```
 
 서버 검증은 `apps/server`에서 `./gradlew clean test`, Client 검증은 `apps/client`에서
-`npm test`, `npm run lint`, `npm run typecheck`, `npm run build:web`을 실행합니다. Docker 없이
+`npm test`, `npm run lint`, `npm run typecheck`, `npm run test:build-env`, `npm run build:all`을 실행합니다. Docker 없이
 UI만 확인하려면 Client의 API 환경 변수를 생략해 mock 모드로 실행할 수 있습니다.
+
+EAS preview·production 환경에는 외부 HTTPS Backend 주소를 `EXPO_PUBLIC_API_URL`로 등록합니다.
+EAS 프로젝트 연결과 Android·iOS Maestro 스모크 절차는 `apps/client/README.md`, 실제 기기
+배포 게이트는 `docs/quality/mobile-release-checklist.md`에 정리되어 있습니다.
 
 ## 작업 순서
 

@@ -32,3 +32,5 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   멱등 삭제·계정 전환 격리, 배포 API fail-closed와 내부 알파 검색 색인 차단을 추가했다.
 - 2026-07-29: Expo SDK 57 호환 범위와 OpenAPI 생성 도구의 peer dependency를 함께 만족하도록
   TypeScript를 5.9 계열로 정렬해 GitHub Actions의 재현 가능한 설치를 복구했다.
+- 2026-07-29: Expo SDK 57 패치 의존성을 정렬하고 EAS environment별 공개 API 사전 검증,
+  전 플랫폼 bundle export와 Android·iOS Maestro 내부 알파 스모크 워크플로를 추가했다.

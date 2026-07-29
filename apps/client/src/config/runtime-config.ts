@@ -55,8 +55,17 @@ export function getRuntimeConfig(): RuntimeConfig {
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
       throw new Error('EXPO_PUBLIC_API_URL은 http 또는 https 주소여야 합니다.');
     }
+    if (parsedUrl.username || parsedUrl.password) {
+      throw new Error('EXPO_PUBLIC_API_URL에 사용자 이름이나 비밀번호를 포함할 수 없어요.');
+    }
+    if (parsedUrl.search || parsedUrl.hash) {
+      throw new Error('EXPO_PUBLIC_API_URL은 query 또는 fragment가 없는 API 기준 주소여야 합니다.');
+    }
     if (isDeployedBuild && parsedUrl.protocol !== 'https:') {
       throw new Error('preview와 production 빌드는 HTTPS API URL이 필요합니다.');
+    }
+    if (isDeployedBuild && isLocalOrPrivateHostname(parsedUrl.hostname)) {
+      throw new Error('preview와 production 빌드는 외부 기기에서 접근 가능한 공개 API 호스트가 필요합니다.');
     }
     normalizedApiUrl = rawApiUrl.replace(/\/+$/, '');
   }
@@ -65,4 +74,33 @@ export function getRuntimeConfig(): RuntimeConfig {
     apiMode,
     apiUrl: normalizedApiUrl,
   };
+}
+
+function isLocalOrPrivateHostname(hostname: string) {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const isIpv6 = normalized.includes(':');
+  if (
+    normalized === 'localhost'
+    || normalized.endsWith('.localhost')
+    || normalized.endsWith('.local')
+    || (isIpv6 && (
+      normalized === '::1'
+      || normalized.startsWith('fc')
+      || normalized.startsWith('fd')
+      || normalized.startsWith('fe80:')
+    ))
+  ) {
+    return true;
+  }
+
+  const octets = normalized.split('.').map(Number);
+  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+    return false;
+  }
+  return octets[0] === 0
+    || octets[0] === 10
+    || octets[0] === 127
+    || (octets[0] === 169 && octets[1] === 254)
+    || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
+    || (octets[0] === 192 && octets[1] === 168);
 }

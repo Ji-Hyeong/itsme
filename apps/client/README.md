@@ -20,6 +20,32 @@ EAS preview·production은 HTTPS API URL이 없으면 빌드를 중단합니다.
 `npm run ios`와 `npm run android`로 네이티브 화면을 실행할 수 있습니다. 공식 Expo SDK 57의
 최소 Node.js 버전은 22.13이므로 Node.js 22 이상 LTS를 사용합니다.
 
+## EAS 환경과 모바일 스모크
+
+EAS 프로젝트를 연결한 뒤 API 주소를 비밀값이 아닌 `plaintext` 공개 환경 변수로 등록합니다.
+실제 URL은 Backend가 배포된 외부 HTTPS 주소여야 하며 localhost와 사설 IP는 빌드 전에 거절됩니다.
+
+```bash
+eas init
+eas env:create --name EXPO_PUBLIC_API_URL --value https://preview-api.example.com --environment preview --visibility plaintext
+eas env:create --name EXPO_PUBLIC_API_URL --value https://api.example.com --environment production --visibility plaintext
+eas env:list --environment preview
+eas env:list --environment production
+```
+
+`eas.json`은 각 build profile과 EAS environment를 명시적으로 연결합니다. 배포 빌드는
+`eas-build-pre-install`에서 환경값을 먼저 검증하므로 잘못된 주소로 Android·iOS 바이너리를
+만들지 않습니다. mock 기반 모바일 핵심 여정은 Android Emulator와 iOS Simulator에서 같은
+Maestro flow를 실행합니다.
+
+```bash
+npm run test:build-env
+npm run validate:mobile
+eas workflow:run .eas/workflows/mobile-smoke.yml
+```
+
+EAS Workflow는 빌드 비용이 발생할 수 있어 자동 PR trigger 없이 수동 실행으로 유지합니다.
+
 ## 핵심 흐름
 
 1. 운영자가 발급한 초대 계정으로 로그인합니다.
@@ -49,8 +75,9 @@ Web의 임의 공개 slug 직접 진입을 위해 SPA(`web.output: single`)로 e
 npm test
 npm run lint
 npm run typecheck
+npm run test:build-env
 npm run generate:api
-npm run build:web
+npm run build:all
 ```
 
 `contracts/openapi/itsme.yaml`을 바꾸면 `npm run generate:api`로 생성 타입을 갱신하고 함께

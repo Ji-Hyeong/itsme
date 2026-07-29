@@ -1,0 +1,27 @@
+appId: com.itsme.identity
+---
+- launchApp:
+    clearState: true
+- assertVisible: "내 기록으로 돌아가기"
+- tapOn: "이메일"
+- inputText: "invite@example.com"
+- tapOn: "비밀번호"
+- inputText: "mock-password"
+- hideKeyboard
+- tapOn: "로그인"
+- assertVisible: "내 프로필"
+- tapOn: "질문"
+- assertVisible: "요즘 자꾸 눈이 가는 색은 무엇인가요?"
+- tapOn: "이끼 초록"
+- tapOn: "이대로 남기기"
+- assertVisible: "요즘의 나를 설명할 때 MBTI를 사용한다면 무엇인가요?"
+- tapOn: "나"
+- assertVisible: "이끼 초록"
+- tapOn: "공개"
+- tapOn: "좋아하는 색, 현재 나만 보기"
+- assertVisible: "공개 전 확인"
+- tapOn: "공개 모습 확인하기"
+- assertVisible: "공개 모습 미리보기"
+- assertVisible: "이끼 초록"
+- tapOn: "이대로 공개하기"
+- assertVisible: "좋아하는 색, 현재 공개"

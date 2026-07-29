@@ -1,10 +1,13 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "remote",
+    "requireCommit": true
   },
   "build": {
     "development": {
+      "node": "22.23.1",
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal",
       "env": {
@@ -13,17 +16,40 @@
       }
     },
     "preview": {
+      "node": "22.23.1",
+      "environment": "preview",
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_MODE": "http",
         "EXPO_PUBLIC_BUILD_PROFILE": "preview"
       }
     },
     "production": {
+      "node": "22.23.1",
+      "environment": "production",
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_MODE": "http",
         "EXPO_PUBLIC_BUILD_PROFILE": "production"
+      }
+    },
+    "e2e-test": {
+      "node": "22.23.1",
+      "environment": "development",
+      "distribution": "internal",
+      "withoutCredentials": true,
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_MODE": "mock",
+        "EXPO_PUBLIC_BUILD_PROFILE": "local"
       }
     }
   },
