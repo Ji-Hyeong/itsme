@@ -92,3 +92,5 @@
   전체 버전 영구 삭제와 Client·Server GitHub Actions 검증을 추가했다.
 - 2026-07-22: 독립 보안 리뷰를 반영해 내부 ID 없는 공개 projection, 버전 충돌 방지,
   1회용 공개 미리보기 승인, 계정 회수·로그인 제한·검색 색인 차단을 보강했다.
+- 2026-07-29: GitHub Actions 실환경 검증을 반영해 Client TypeScript 의존성을 호환 범위로
+  정렬하고 PostgreSQL JDBC 시간 파라미터를 명시적으로 변환하도록 보강했다.

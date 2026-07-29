@@ -1,6 +1,7 @@
 package com.itsme.sharing
 
 import com.itsme.common.ApiException
+import com.itsme.common.asJdbcTimestamp
 import com.itsme.profile.Category
 import com.itsme.identity.IdentityService
 import org.springframework.beans.factory.annotation.Value
@@ -72,7 +73,9 @@ class PublicProfileQueryService(
             mapOf(
                 "id" to UUID.randomUUID(), "userId" to userId, "recordId" to request.recordId,
                 "versionId" to currentVersionId, "visibility" to request.visibility.name,
-                "tokenHash" to IdentityService.hashToken(token), "expiresAt" to expiresAt, "now" to now,
+                "tokenHash" to IdentityService.hashToken(token),
+                "expiresAt" to expiresAt.asJdbcTimestamp(),
+                "now" to now.asJdbcTimestamp(),
             ),
         )
         return PublicProfilePreviewResponse(token, expiresAt, profile)

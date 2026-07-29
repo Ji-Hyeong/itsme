@@ -30,3 +30,5 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   실제 HTTP adapter와 mock 모드, 보호 라우트·401 재로그인 및 익명 공개 프로필 경계를 추가했다.
 - 2026-07-22: 공개 DTO에서 내부 기록 ID를 제거하고 버전 조건부 수정, token 기반 공개 전 미리보기,
   멱등 삭제·계정 전환 격리, 배포 API fail-closed와 내부 알파 검색 색인 차단을 추가했다.
+- 2026-07-29: Expo SDK 57 호환 범위와 OpenAPI 생성 도구의 peer dependency를 함께 만족하도록
+  TypeScript를 5.9 계열로 정렬해 GitHub Actions의 재현 가능한 설치를 복구했다.

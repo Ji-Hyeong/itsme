@@ -2,6 +2,7 @@ package com.itsme
 
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
+import com.itsme.common.asJdbcTimestamp
 import com.itsme.identity.IdentityService
 import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.not
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.options
 import java.time.Duration
 import java.time.Instant
+import java.sql.Timestamp
 import java.util.UUID
 
 @SpringBootTest
@@ -74,23 +76,23 @@ class ItsmeApiIntegrationTest @Autowired constructor(
         val active = inviteAndLogin()
         val activeHash = IdentityService.hashToken(active.token)
         jdbc.sql("update user_sessions set expires_at = :expiresAt where token_hash = :hash")
-            .param("expiresAt", Instant.now().plusSeconds(30)).param("hash", activeHash).update()
+            .param("expiresAt", Instant.now().plusSeconds(30).asJdbcTimestamp()).param("hash", activeHash).update()
 
         mockMvc.get("/v1/auth/me") { bearer(active.token) }.andExpect { status { isOk() } }
         val extendedExpiry = jdbc.sql("select expires_at from user_sessions where token_hash = :hash")
-            .param("hash", activeHash).query(Instant::class.java).single()
+            .param("hash", activeHash).query(Timestamp::class.java).single().toInstant()
         require(extendedExpiry.isAfter(Instant.now().plus(Duration.ofDays(6))))
 
         val expired = inviteAndLogin()
         val expiredHash = IdentityService.hashToken(expired.token)
         val lastUsedBefore = jdbc.sql("select last_used_at from user_sessions where token_hash = :hash")
-            .param("hash", expiredHash).query(Instant::class.java).single()
+            .param("hash", expiredHash).query(Timestamp::class.java).single().toInstant()
         jdbc.sql("update user_sessions set expires_at = :expiresAt where token_hash = :hash")
-            .param("expiresAt", Instant.now().minusSeconds(1)).param("hash", expiredHash).update()
+            .param("expiresAt", Instant.now().minusSeconds(1).asJdbcTimestamp()).param("hash", expiredHash).update()
 
         mockMvc.get("/v1/auth/me") { bearer(expired.token) }.andExpect { status { isUnauthorized() } }
         val lastUsedAfter = jdbc.sql("select last_used_at from user_sessions where token_hash = :hash")
-            .param("hash", expiredHash).query(Instant::class.java).single()
+            .param("hash", expiredHash).query(Timestamp::class.java).single().toInstant()
         require(lastUsedAfter == lastUsedBefore) { "Expired sessions must not be extended" }
     }
 

@@ -1,6 +1,7 @@
 package com.itsme.record
 
 import com.itsme.common.ApiException
+import com.itsme.common.asJdbcTimestamp
 import com.itsme.profile.Category
 import com.itsme.profile.OwnerProfileResponse
 import com.itsme.profile.ProfileService
@@ -39,7 +40,8 @@ class RecordService(
         ).params(
             mapOf(
                 "id" to recordId, "userId" to userId, "questionId" to request.questionId,
-                "category" to question.category.name, "title" to question.title, "now" to now,
+                "category" to question.category.name, "title" to question.title,
+                "now" to now.asJdbcTimestamp(),
             ),
         ).update()
         jdbc.sql(
@@ -48,7 +50,8 @@ class RecordService(
         ).params(
             mapOf(
                 "id" to UUID.randomUUID(), "recordId" to recordId, "answer" to answer,
-                "context" to request.context?.trim()?.ifEmpty { null }, "now" to now,
+                "context" to request.context?.trim()?.ifEmpty { null },
+                "now" to now.asJdbcTimestamp(),
             ),
         ).update()
         return profileService.ownerProfile(userId)
@@ -79,12 +82,13 @@ class RecordService(
             mapOf(
                 "id" to UUID.randomUUID(), "recordId" to recordId, "version" to nextVersion, "answer" to answer,
                 "changedBecause" to request.changedBecause?.trim()?.ifEmpty { null },
-                "nextStep" to request.nextStep?.trim()?.ifEmpty { null }, "now" to now,
+                "nextStep" to request.nextStep?.trim()?.ifEmpty { null },
+                "now" to now.asJdbcTimestamp(),
             ),
         ).update()
         // 공개 중인 서술이 조용히 바뀌지 않게 수정은 공개 동의를 철회하고 재공개를 별도 행동으로 요구한다.
         jdbc.sql("update profile_records set visibility = 'private', updated_at = :now where id = :id and user_id = :userId")
-            .param("now", now).param("id", recordId).param("userId", userId).update()
+            .param("now", now.asJdbcTimestamp()).param("id", recordId).param("userId", userId).update()
         return profileService.ownerProfile(userId)
     }
 
@@ -105,14 +109,14 @@ class RecordService(
                    where token_hash = :tokenHash and user_id = :userId and record_id = :recordId
                      and version_id = :versionId and candidate_visibility = 'public'
                      and consumed_at is null and expires_at > :now""",
-            ).param("now", now).param("tokenHash", IdentityService.hashToken(rawToken))
+            ).param("now", now.asJdbcTimestamp()).param("tokenHash", IdentityService.hashToken(rawToken))
                 .param("userId", userId).param("recordId", recordId).param("versionId", versionId).update()
             if (consumed == 0) {
                 throw ApiException(HttpStatus.CONFLICT, "PREVIEW_INVALID", "미리보기가 만료되었거나 기록이 바뀌었어요. 다시 확인해 주세요.")
             }
         }
         jdbc.sql("update profile_records set visibility = :visibility, updated_at = :now where id = :id and user_id = :userId")
-            .param("visibility", request.visibility.name).param("now", now)
+            .param("visibility", request.visibility.name).param("now", now.asJdbcTimestamp())
             .param("id", recordId).param("userId", userId).update()
         return profileService.ownerProfile(userId)
     }

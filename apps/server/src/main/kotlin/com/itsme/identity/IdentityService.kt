@@ -1,6 +1,7 @@
 package com.itsme.identity
 
 import com.itsme.common.ApiException
+import com.itsme.common.asJdbcTimestamp
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -43,7 +44,7 @@ class IdentityService(
                 "passwordHash" to passwordEncoder.encode(password),
                 "displayName" to displayName.trim(),
                 "slug" to slug,
-                "now" to now,
+                "now" to now.asJdbcTimestamp(),
             ),
         ).update()
     }
@@ -76,14 +77,14 @@ class IdentityService(
     @Transactional
     fun logout(rawToken: String) {
         jdbc.sql("update user_sessions set revoked_at = :now where token_hash = :hash and revoked_at is null")
-            .param("now", Instant.now(clock)).param("hash", hashToken(rawToken)).update()
+            .param("now", Instant.now(clock).asJdbcTimestamp()).param("hash", hashToken(rawToken)).update()
     }
 
     @Transactional
     fun revokeAccount(userId: UUID) {
         val now = Instant.now(clock)
         val affected = jdbc.sql("update app_users set revoked_at = :now, updated_at = :now where id = :id and revoked_at is null")
-            .param("now", now).param("id", userId).update()
+            .param("now", now.asJdbcTimestamp()).param("id", userId).update()
         if (affected == 0) throw ApiException(HttpStatus.NOT_FOUND, "PROFILE_NOT_FOUND", "프로필을 찾지 못했어요.")
         // 회수 표식과 모든 세션 폐기를 한 트랜잭션에 묶어 기존 기기가 다시 접근할 틈을 남기지 않는다.
         jdbc.sql("delete from user_sessions where user_id = :userId").param("userId", userId).update()
@@ -94,7 +95,15 @@ class IdentityService(
         val token = Base64.getUrlEncoder().withoutPadding().encodeToString(rawTokenBytes)
         val expiresAt = now.plus(sessionTtl)
         jdbc.sql("insert into user_sessions(id, user_id, token_hash, expires_at, last_used_at, created_at) values (:id, :userId, :hash, :expiresAt, :now, :now)")
-            .params(mapOf("id" to UUID.randomUUID(), "userId" to user.id, "hash" to hashToken(token), "expiresAt" to expiresAt, "now" to now))
+            .params(
+                mapOf(
+                    "id" to UUID.randomUUID(),
+                    "userId" to user.id,
+                    "hash" to hashToken(token),
+                    "expiresAt" to expiresAt.asJdbcTimestamp(),
+                    "now" to now.asJdbcTimestamp(),
+                ),
+            )
             .update()
         return SessionResponse(token, expiresAt, user)
     }

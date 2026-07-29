@@ -1,6 +1,7 @@
 package com.itsme.profile
 
 import com.itsme.common.ApiException
+import com.itsme.common.asJdbcTimestamp
 import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Service
@@ -64,7 +65,9 @@ class ProfileService(private val jdbc: JdbcClient) {
         ).params(
             mapOf(
                 "displayName" to request.displayName?.trim(), "hasIntro" to (request.intro != null),
-                "intro" to request.intro?.trim()?.ifEmpty { null }, "now" to Instant.now(), "id" to userId,
+                "intro" to request.intro?.trim()?.ifEmpty { null },
+                "now" to Instant.now().asJdbcTimestamp(),
+                "id" to userId,
             ),
         ).update()
         if (affected == 0) throw ApiException(HttpStatus.NOT_FOUND, "PROFILE_NOT_FOUND", "프로필을 찾지 못했어요.")

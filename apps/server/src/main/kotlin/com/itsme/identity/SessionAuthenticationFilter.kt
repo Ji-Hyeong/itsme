@@ -1,5 +1,6 @@
 package com.itsme.identity
 
+import com.itsme.common.asJdbcTimestamp
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -30,12 +31,12 @@ class SessionAuthenticationFilter(
                 """select s.user_id from user_sessions s join app_users u on u.id = s.user_id
                    where s.token_hash = :hash and s.revoked_at is null and s.expires_at > :now
                      and u.revoked_at is null""",
-            ).param("hash", tokenHash).param("now", now)
+            ).param("hash", tokenHash).param("now", now.asJdbcTimestamp())
                 .query(UUID::class.java).optional().orElse(null)
             if (userId != null) {
                 // 만료 시점을 사용 시점마다 미뤄 7일 비활동 정책을 구현한다. 원문 토큰은 저장하거나 로그에 남기지 않는다.
                 jdbc.sql("update user_sessions set last_used_at = :now, expires_at = :expiresAt where token_hash = :hash and revoked_at is null")
-                    .param("now", now).param("expiresAt", now.plus(sessionTtl))
+                    .param("now", now.asJdbcTimestamp()).param("expiresAt", now.plus(sessionTtl).asJdbcTimestamp())
                     .param("hash", tokenHash).update()
                 SecurityContextHolder.getContext().authentication =
                     UsernamePasswordAuthenticationToken.authenticated(userId, token, emptyList())
