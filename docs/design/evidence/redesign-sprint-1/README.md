@@ -3,6 +3,7 @@
 ## 캡처 환경
 
 - 날짜: 2026-08-03
+- 승인 대상 코드·증거 commit: `c2187e7`
 - 실행: Expo SDK 57 Web, mock API, Pretendard 로컬 번들 폰트
 - viewport: 390×844, 430×932
 - 검수 경로: 로그인 → 나 → 질문 → 600자 자유 입력 → 공개 선택
@@ -32,8 +33,8 @@
 
 ## 검수 판정
 
-- Product Designer: Web 핵심 흐름 `Approved`, Blocker 0·Major 0·Minor 0
-- Independent Reviewer: 개인정보·공개 의미·focus 핵심 흐름 Major 0
+- Product Designer (2026-08-03): Web 핵심 흐름 `Approved`, Blocker 0·Major 0·Minor 0
+- Independent Reviewer (2026-08-03): 개인정보·공개 의미·focus 핵심 흐름 Major 0
 - 공식 전체 출고 게이트: 미승인. 화면별 로딩·오류·권한·실패 상태 매트릭스,
   동일 commit 시각 회귀 CI와 아래 Native 증거가 남아 있다.
 
