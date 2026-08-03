@@ -34,3 +34,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   TypeScript를 5.9 계열로 정렬해 GitHub Actions의 재현 가능한 설치를 복구했다.
 - 2026-07-29: Expo SDK 57 패치 의존성을 정렬하고 EAS environment별 공개 API 사전 검증,
   전 플랫폼 bundle export와 Android·iOS Maestro 내부 알파 스모크 워크플로를 추가했다.
+- 2026-08-03: semantic token과 `ScreenHeader`, `SceneCard`, `BottomActionBar`, `StatePanel`,
+  `BlockingDialog`, Pretendard 번들 폰트를 추가하고 핵심 화면을 390·430px 단일열과 200% 확대
+  규칙에 맞춰 재구성했다.
+- 2026-08-03: 공개 route 상태를 owner projection과 분리해 slug 전환 경쟁 상태를 제거하고,
+  공개 정책 카피·600자 counter·삭제 dialog와 관련 회귀 테스트·Web 시각 증거를 보강했다.
+- 2026-08-03: 공개 확인 dialog의 Web·Native 배경 차단 경계와 초기·복귀 focus를 보강하고,
+  공개 미리보기 전환 후 stack에 이전 modal이 남지 않도록 상태를 먼저 초기화했다.

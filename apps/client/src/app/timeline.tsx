@@ -1,14 +1,24 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  AccessibilityInfo,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { categoryMeta } from '@/domain/profile';
+import type { RecordVersion } from '@/domain/profile';
 import { categoryStyle } from '@/features/profile/category-style';
 import { useItsme } from '@/state/ItsmeProvider';
-import { ActionButton } from '@/ui/ActionButton';
 import { AppShell } from '@/ui/AppShell';
+import { FocusPressable } from '@/ui/FocusPressable';
 import { Screen } from '@/ui/Screen';
-import { Body, Display, Eyebrow, Meta } from '@/ui/Type';
-import { colors, fonts, space } from '@/ui/tokens';
+import { ScreenHeader } from '@/ui/ScreenHeader';
+import { StatePanel } from '@/ui/StatePanel';
+import { Body, Meta } from '@/ui/Type';
+import { colors, fonts, layout, radii, space, typeScale } from '@/ui/tokens';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' }).format(
@@ -16,98 +26,217 @@ function formatDate(value: string) {
   );
 }
 
+function useScreenReaderEnabled() {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isScreenReaderEnabled().then((nextEnabled) => {
+      if (active) setEnabled(nextEnabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('screenReaderChanged', setEnabled);
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return enabled;
+}
+
 export default function TimelineScreen() {
   const router = useRouter();
   const { fontScale } = useWindowDimensions();
-  const largeText = fontScale >= 1.5;
+  const largeText = fontScale >= layout.largeTextScale;
+  const screenReaderEnabled = useScreenReaderEnabled();
+  const [expandedContexts, setExpandedContexts] = useState<ReadonlySet<string>>(() => new Set());
   const { profile, loading, error, refresh } = useItsme();
   const changedRecords = profile?.records.filter((record) => record.versions.length > 1) ?? [];
+
+  const toggleContext = (versionId: string) => {
+    setExpandedContexts((current) => {
+      const next = new Set(current);
+      if (next.has(versionId)) next.delete(versionId);
+      else next.add(versionId);
+      return next;
+    });
+  };
 
   return (
     <AppShell>
       <Screen>
-        <Eyebrow>변화 기록</Eyebrow>
-        <Display accessibilityRole="header">변화는 기록이 된다</Display>
-        <Body style={styles.intro}>달라진 문장을 보여드릴게요. 그 변화의 의미는 오직 내가 정해요.</Body>
+        <ScreenHeader
+          description="달라진 문장을 보여드릴게요. 그 의미는 오직 내가 정해요."
+          title="변화는 기록이 된다"
+        />
 
-        {loading ? <Body accessibilityRole="progressbar" style={styles.state}>시간을 펼치는 중…</Body> : null}
+        {loading ? <TimelineSkeleton /> : null}
         {!loading && error && !profile ? (
-          <View accessibilityLiveRegion="assertive" style={styles.empty}>
-            <Text style={styles.emptyTitle}>변화 기록을 불러오지 못했어요.</Text>
-            <Body style={styles.intro}>{error}</Body>
-            <View style={styles.startAction}>
-              <ActionButton fullWidth onPress={() => void refresh()} tone="paper">다시 불러오기</ActionButton>
-            </View>
-          </View>
+          <StatePanel
+            action={{ label: '다시 불러오기', onPress: () => void refresh() }}
+            description={error}
+            title="변화 기록을 불러오지 못했어요."
+            variant="error"
+          />
         ) : null}
         {!loading && profile && changedRecords.length === 0 ? (
-          <View style={styles.empty}>
-            <Text accessible={false} style={styles.emptySymbol}>첫 장면</Text>
-            <Text style={styles.emptyTitle}>아직 비교할 기록이 없어요.</Text>
-            <Body style={styles.intro}>지금의 답이 첫 장면이에요. 나중에 생각이 달라지면 그 사이의 이야기가 이곳에 남아요.</Body>
-            <View style={styles.startAction}>
-              <ActionButton fullWidth onPress={() => router.push('/me')} tone="paper">현재 기록 살펴보기</ActionButton>
-            </View>
-          </View>
+          <StatePanel
+            action={{ label: '현재 기록 살펴보기', onPress: () => router.push('/me') }}
+            description="지금의 답은 그대로 잘 보관하고 있어요."
+            title="아직 비교할 과거 문장이 없어요."
+            variant="empty"
+          />
         ) : null}
 
-        <View style={styles.timeline}>
-          {changedRecords.map((record) => {
-            const tone = categoryStyle[record.category];
-            return (
-              <View key={record.id} style={[styles.recordGroup, { borderLeftColor: tone.accent }]}>
-                <View style={styles.groupHeader}>
-                  <Text style={[styles.categoryMark, { color: tone.accent }]}>{tone.symbol}</Text>
-                  <View style={styles.groupTitle}>
-                    <Meta style={{ color: colors.ink }}>{categoryMeta[record.category].label}</Meta>
+        {!loading && changedRecords.length > 0 ? (
+          <View style={styles.timeline}>
+            {changedRecords.map((record) => {
+              const tone = categoryStyle[record.category];
+              return (
+                <View key={record.id} style={styles.recordGroup}>
+                  <View accessible={false} style={[styles.categoryBar, { backgroundColor: tone.accent }]} />
+                  <View style={styles.groupHeader}>
+                    <Meta>{categoryMeta[record.category].label}</Meta>
                     <Text style={styles.groupName}>{record.title}</Text>
                   </View>
+                  <View style={styles.events}>
+                    {record.versions.map((version, index) => {
+                      const current = index === record.versions.length - 1;
+                      const showFullContext = largeText
+                        || screenReaderEnabled
+                        || expandedContexts.has(version.id);
+                      return (
+                        <TimelineEvent
+                          current={current}
+                          key={version.id}
+                          largeText={largeText}
+                          onOpen={() => router.push({ pathname: '/record/[id]', params: { id: record.id } })}
+                          onToggleContext={() => toggleContext(version.id)}
+                          showFullContext={showFullContext}
+                          version={version}
+                        />
+                      );
+                    })}
+                  </View>
                 </View>
-                <View style={styles.events}>
-                  {record.versions.map((version, index) => (
-                    <View key={version.id} style={[styles.event, largeText && styles.largeTextEvent]}>
-                      <View
-                        accessible={false}
-                        style={[styles.eventMark, { backgroundColor: index === record.versions.length - 1 ? tone.accent : colors.line }]}
-                      />
-                      <View style={styles.eventBody}>
-                        <Meta>{formatDate(version.recordedAt)}{index === record.versions.length - 1 ? ' · 지금' : ''}</Meta>
-                        <Text style={styles.eventAnswer}>{version.answer}</Text>
-                        {version.changedBecause ? <Body style={styles.reason}>달라진 계기 · {version.changedBecause}</Body> : null}
-                        {version.nextStep ? <View style={styles.nextBand}><Meta style={styles.next}>다음 시도 · {version.nextStep}</Meta></View> : null}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        ) : null}
       </Screen>
     </AppShell>
   );
 }
 
+type TimelineEventProps = {
+  current: boolean;
+  largeText: boolean;
+  onOpen(): void;
+  onToggleContext(): void;
+  showFullContext: boolean;
+  version: RecordVersion;
+};
+
+function TimelineEvent({
+  current,
+  largeText,
+  onOpen,
+  onToggleContext,
+  showFullContext,
+  version,
+}: TimelineEventProps) {
+  const secondaryContext = [
+    version.changedBecause ? `달라진 계기 · ${version.changedBecause}` : null,
+    version.nextStep ? `다음 시도 · ${version.nextStep}` : null,
+  ].filter((value): value is string => value !== null).join('\n\n');
+  // 실제 줄 수는 기기 폭과 글꼴에 따라 달라지므로, 짧은 문장에는 불필요한 펼치기 control을 만들지 않는다.
+  const contextCanCollapse = secondaryContext.length > 120;
+
+  return (
+    <View style={[styles.event, largeText && styles.largeTextEvent]}>
+      <View style={[styles.dateRail, largeText && styles.largeTextDateRail]}>
+        <View accessible={false} style={[styles.eventMark, current && styles.currentMark]} />
+        <Meta>{formatDate(version.recordedAt)}</Meta>
+        <Meta style={styles.versionLabel}>{current ? '지금은' : '이전에는'}</Meta>
+      </View>
+      <View style={styles.eventBody}>
+        <FocusPressable
+          accessibilityLabel={`${current ? '지금은' : '이전에는'}, ${version.answer}, 기록 상세 열기`}
+          accessibilityRole="button"
+          onPress={onOpen}
+          style={({ focused, pressed }) => [
+            styles.answerButton,
+            focused && styles.focused,
+            pressed && styles.pressed,
+          ]}>
+          <Text style={styles.eventAnswer}>{version.answer}</Text>
+        </FocusPressable>
+        {secondaryContext ? (
+          <View style={styles.contextBlock}>
+            <Body numberOfLines={contextCanCollapse && !showFullContext ? 4 : undefined} style={styles.reason}>
+              {secondaryContext}
+            </Body>
+            {contextCanCollapse && !showFullContext ? (
+              <FocusPressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: false }}
+                onPress={onToggleContext}
+                style={({ focused, pressed }) => [
+                  styles.readMore,
+                  focused && styles.focused,
+                  pressed && styles.pressed,
+                ]}>
+                <Text style={styles.readMoreLabel}>이어 읽기</Text>
+              </FocusPressable>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function TimelineSkeleton() {
+  return (
+    <View accessibilityLabel="변화 기록 불러오는 중" accessibilityRole="progressbar" style={styles.timeline}>
+      {[0, 1].map((item) => (
+        <View key={item} style={styles.skeletonGroup}>
+          <View style={styles.skeletonMeta} />
+          <View style={styles.skeletonTitle} />
+          <View style={styles.skeletonAnswer} />
+          <View style={styles.skeletonAnswerShort} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  intro: { width: '100%', color: colors.mutedInk, marginTop: space.sm },
-  state: { marginTop: space.xxl },
-  empty: { width: '100%', marginTop: space.xxl, padding: space.lg, borderColor: colors.line, borderWidth: 1, borderRadius: 18, backgroundColor: colors.white },
-  emptySymbol: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 18, lineHeight: 28 },
-  emptyTitle: { color: colors.ink, fontFamily: fonts.serifBold, fontSize: 24, lineHeight: 35, marginTop: space.sm },
-  startAction: { width: '100%', marginTop: space.lg },
-  timeline: { width: '100%', marginTop: space.xl, marginBottom: space.xxl, gap: space.lg },
-  recordGroup: { width: '100%', overflow: 'hidden', borderColor: colors.line, borderLeftWidth: 4, borderRightWidth: 1, borderTopWidth: 1, borderBottomWidth: 1, borderRadius: 18, backgroundColor: colors.white },
-  groupHeader: { width: '100%', flexDirection: 'column', alignItems: 'flex-start', gap: space.xs, borderBottomColor: colors.line, borderBottomWidth: 1, padding: space.md },
-  categoryMark: { fontFamily: fonts.sansBold, fontSize: 14, lineHeight: 22 },
-  groupTitle: { flex: 1, minWidth: 0, justifyContent: 'center' },
-  groupName: { color: colors.ink, fontFamily: fonts.serifBold, fontSize: 20, lineHeight: 29, marginTop: space.xs },
-  events: { gap: 0 },
-  event: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: space.md, borderBottomColor: colors.line, borderBottomWidth: 1, padding: space.md },
+  timeline: { width: '100%', marginTop: space.lg, marginBottom: space.xxl, gap: space.xl },
+  recordGroup: { width: '100%', overflow: 'hidden', borderColor: colors.lineSubtle, borderWidth: 1, borderRadius: radii.lg, backgroundColor: colors.surface },
+  categoryBar: { width: '100%', height: 4 },
+  groupHeader: { width: '100%', gap: space.xs, padding: space.mdLg, borderBottomColor: colors.lineSubtle, borderBottomWidth: 1 },
+  groupName: { color: colors.ink, ...typeScale.sectionTitle },
+  events: { width: '100%' },
+  event: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: space.smMd, padding: space.mdLg, borderBottomColor: colors.lineSubtle, borderBottomWidth: 1 },
   largeTextEvent: { flexDirection: 'column' },
-  eventMark: { width: 8, height: 8, borderRadius: 999, marginTop: 7 },
-  eventBody: { flex: 1, minWidth: 0 },
-  eventAnswer: { color: colors.ink, fontFamily: fonts.serifBold, fontSize: 21, lineHeight: 32, marginVertical: space.sm },
-  reason: { color: colors.mutedInk },
-  nextBand: { alignSelf: 'flex-start', marginTop: space.md, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: 999, backgroundColor: colors.ochreSoft },
-  next: { color: colors.ink },
+  dateRail: { width: 84, alignItems: 'flex-start', gap: space.xs },
+  largeTextDateRail: { width: '100%' },
+  eventMark: { width: 8, height: 8, borderRadius: radii.pill, backgroundColor: colors.lineStrong },
+  currentMark: { backgroundColor: colors.apricot },
+  versionLabel: { color: colors.ink, fontFamily: fonts.sansMedium },
+  eventBody: { flex: 1, minWidth: 0, gap: space.md },
+  answerButton: { width: '100%', minHeight: layout.minTouch, justifyContent: 'center', margin: -3, padding: 3, borderColor: 'transparent', borderWidth: 3, borderRadius: radii.sm },
+  eventAnswer: { color: colors.ink, ...typeScale.sceneAnswer },
+  contextBlock: { width: '100%', gap: space.sm },
+  reason: { color: colors.muted },
+  readMore: { minHeight: layout.minTouch, alignSelf: 'flex-start', justifyContent: 'center', margin: -3, paddingHorizontal: space.sm + 3, borderColor: 'transparent', borderWidth: 3, borderRadius: radii.md },
+  readMoreLabel: { color: colors.indigoDeep, ...typeScale.control },
+  focused: { borderColor: colors.focus },
+  pressed: { opacity: 0.7 },
+  skeletonGroup: { minHeight: 228, gap: space.md, padding: space.mdLg, borderRadius: radii.lg, backgroundColor: colors.surface },
+  skeletonMeta: { width: '28%', height: 18, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
+  skeletonTitle: { width: '62%', height: 31, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
+  skeletonAnswer: { width: '100%', height: 36, marginTop: space.md, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
+  skeletonAnswerShort: { width: '74%', height: 36, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
 });

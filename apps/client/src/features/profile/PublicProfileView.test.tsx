@@ -12,7 +12,7 @@ describe('PublicProfileView', () => {
 
     const screen = await render(<PublicProfileView profile={profile} />);
 
-    expect(screen.getByText('아직 꺼내 보여준 소개가 없어요.')).toBeTruthy();
+    expect(screen.getByText('공개한 기록은 아직 없어요.')).toBeTruthy();
     expect(screen.queryByText(/미완성|완성도|팔로워|좋아요/)).toBeNull();
   });
 

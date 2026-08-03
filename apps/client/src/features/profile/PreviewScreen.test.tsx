@@ -10,6 +10,7 @@ const mockRouter = {
 const mockSetVisibility = jest.fn();
 const mockClearVisibilityPreview = jest.fn();
 const mockClearError = jest.fn();
+const mockFocusTarget = jest.fn();
 const previewToken = 'p'.repeat(43);
 const previewProfile = {
   displayName: '지금의 나',
@@ -37,6 +38,7 @@ jest.mock('@/state/AuthProvider', () => ({
   useAuth: () => ({ user: { id: 'owner-me', slug: 'scene-me' } }),
 }));
 jest.mock('@/state/ItsmeProvider', () => ({ useItsme: () => mockItsmeState }));
+jest.mock('@/ui/focus-target', () => ({ focusTarget: (target: unknown) => mockFocusTarget(target) }));
 
 describe('공개 후보 미리보기 확정', () => {
   beforeEach(() => {
@@ -49,6 +51,8 @@ describe('공개 후보 미리보기 확정', () => {
 
     expect(screen.getByText('천천히 쉬는 법')).toBeTruthy();
     expect(mockSetVisibility).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockFocusTarget).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText('미리보기 중. 다른 사람에게도 아래 모습 그대로 보여요.')).toBeTruthy();
 
     fireEvent.press(screen.getByText('이대로 공개하기'));
 
@@ -66,10 +70,24 @@ describe('공개 후보 미리보기 확정', () => {
   test('취소하면 후보만 폐기하고 공개 mutation은 실행하지 않는다', async () => {
     const screen = await render(<PreviewScreen />);
 
-    fireEvent.press(screen.getByText('취소하고 선택으로 돌아가기'));
+    fireEvent.press(screen.getByText('선택으로 돌아가기'));
 
     expect(mockSetVisibility).not.toHaveBeenCalled();
     expect(mockClearVisibilityPreview).toHaveBeenCalled();
     expect(mockRouter.replace).toHaveBeenCalledWith('/share');
+  });
+
+  test('공개 기록이 없어도 방문자 renderer의 빈 상태를 한 번만 보여준다', async () => {
+    const originalRecords = [...previewProfile.records];
+    previewProfile.records.splice(0, previewProfile.records.length);
+
+    try {
+      const screen = await render(<PreviewScreen />);
+
+      expect(screen.getAllByText('공개한 기록은 아직 없어요.')).toHaveLength(1);
+      expect(screen.getAllByText('이름과 한 줄 소개만 보여요.')).toHaveLength(1);
+    } finally {
+      previewProfile.records.splice(0, previewProfile.records.length, ...originalRecords);
+    }
   });
 });

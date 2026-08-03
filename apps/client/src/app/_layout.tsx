@@ -1,10 +1,4 @@
-import {
-  NotoSansKR_400Regular,
-  NotoSansKR_600SemiBold,
-  NotoSansKR_700Bold,
-  NotoSansKR_900Black,
-  useFonts as useNotoFonts,
-} from '@expo-google-fonts/noto-sans-kr';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -19,13 +13,12 @@ import { colors } from '@/ui/tokens';
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [notoLoaded] = useNotoFonts({
-    NotoSansKR_400Regular,
-    NotoSansKR_600SemiBold,
-    NotoSansKR_700Bold,
-    NotoSansKR_900Black,
+  const [fontsLoaded] = useFonts({
+    Pretendard_400Regular: require('../../assets/fonts/Pretendard-Regular.otf'),
+    Pretendard_500Medium: require('../../assets/fonts/Pretendard-Medium.otf'),
+    Pretendard_600SemiBold: require('../../assets/fonts/Pretendard-SemiBold.otf'),
+    Pretendard_700Bold: require('../../assets/fonts/Pretendard-Bold.otf'),
   });
-  const fontsLoaded = notoLoaded;
 
   useEffect(() => {
     if (fontsLoaded) {

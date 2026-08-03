@@ -1,16 +1,18 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { FocusPressable } from '@/ui/FocusPressable';
-import { colors, fonts, layout, radii, space } from '@/ui/tokens';
+import { colors, layout, radii, space, typeScale } from '@/ui/tokens';
 
 type PressableProps = ComponentProps<typeof FocusPressable>;
 
-type ActionButtonProps = Omit<PressableProps, 'children'> & {
+export type ActionButtonTone = 'ink' | 'paper' | 'quiet' | 'danger';
+
+export type ActionButtonProps = Omit<PressableProps, 'children'> & {
   children: ReactNode;
   fullWidth?: boolean;
   loading?: boolean;
-  tone?: 'ink' | 'paper' | 'quiet' | 'danger';
+  tone?: ActionButtonTone;
 };
 
 export function ActionButton({
@@ -25,6 +27,7 @@ export function ActionButton({
 }: ActionButtonProps) {
   const isDisabled = disabled || loading;
   const fallbackAccessibilityLabel = typeof children === 'string' ? children : undefined;
+  const lightContent = tone === 'ink' || tone === 'danger';
 
   return (
     <FocusPressable
@@ -37,62 +40,48 @@ export function ActionButton({
         styles.base,
         fullWidth && styles.fullWidth,
         styles[tone],
-        state.focused && styles.focused,
         state.pressed && styles.pressed,
-        isDisabled && styles.disabled,
+        disabled && tone === 'ink' && styles.disabledInk,
+        disabled && tone === 'danger' && styles.disabledDanger,
         typeof style === 'function' ? style(state) : style,
       ]}>
-      {loading ? (
-        <ActivityIndicator color={tone === 'ink' || tone === 'danger' ? colors.white : colors.brand} />
-      ) : (
-        <Text style={[styles.label, tone === 'ink' || tone === 'danger' ? styles.lightLabel : styles.darkLabel]}>
+      <View style={styles.content}>
+        {loading ? <ActivityIndicator color={lightContent ? colors.white : colors.indigoDeep} /> : null}
+        <Text style={[styles.label, lightContent ? styles.lightLabel : styles.darkLabel, disabled && styles.disabledLabel]}>
           {children}
         </Text>
-      )}
+      </View>
     </FocusPressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: layout.minTouch,
+    minHeight: layout.controlHeight,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: space.lg,
-    paddingVertical: 14,
+    paddingHorizontal: space.md,
+    paddingVertical: space.smMd,
     borderRadius: radii.md,
     borderWidth: 1,
   },
   fullWidth: { width: '100%' },
-  ink: {
-    backgroundColor: colors.brand,
-    borderColor: colors.brand,
+  ink: { backgroundColor: colors.indigo, borderColor: colors.indigo },
+  paper: { backgroundColor: colors.surface, borderColor: colors.lineStrong },
+  quiet: { backgroundColor: 'transparent', borderColor: 'transparent' },
+  danger: { backgroundColor: colors.error, borderColor: colors.error },
+  content: {
+    minHeight: layout.minTouch - space.smMd * 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
   },
-  paper: {
-    backgroundColor: colors.white,
-    borderColor: colors.line,
-  },
-  quiet: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
-  danger: {
-    backgroundColor: colors.error,
-    borderColor: colors.error,
-  },
-  label: {
-    fontFamily: fonts.sansBold,
-    fontSize: 15,
-    letterSpacing: -0.2,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
+  label: { ...typeScale.control, textAlign: 'center' },
   lightLabel: { color: colors.white },
-  darkLabel: { color: colors.brandDeep },
-  focused: {
-    borderColor: colors.focus,
-    borderWidth: 2,
-  },
+  darkLabel: { color: colors.indigoDeep },
   pressed: { opacity: 0.74 },
-  disabled: { opacity: 0.46 },
+  disabledInk: { backgroundColor: colors.surfaceMuted, borderColor: colors.lineStrong },
+  disabledDanger: { backgroundColor: colors.errorSoft, borderColor: colors.error },
+  disabledLabel: { color: colors.muted },
 });

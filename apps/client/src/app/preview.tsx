@@ -1,17 +1,25 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { ComponentRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { ScrollView, StyleSheet, Text, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PublicProfileView } from '@/features/profile/PublicProfileView';
 import { useAuth } from '@/state/AuthProvider';
 import { useItsme } from '@/state/ItsmeProvider';
-import { ActionButton } from '@/ui/ActionButton';
+import { BottomActionBar } from '@/ui/BottomActionBar';
+import { FocusPressable } from '@/ui/FocusPressable';
 import { PaperBackground } from '@/ui/PaperBackground';
-import { Body, Heading } from '@/ui/Type';
+import { StatePanel } from '@/ui/StatePanel';
+import { Body } from '@/ui/Type';
+import { focusTarget } from '@/ui/focus-target';
 import { colors, fonts, layout, space } from '@/ui/tokens';
 
 export default function PreviewScreen() {
   const router = useRouter();
+  const { fontScale } = useWindowDimensions();
+  const largeText = fontScale >= layout.largeTextScale;
+  const previewHeadingRef = useRef<ComponentRef<typeof FocusPressable>>(null);
   const { user } = useAuth();
   const {
     publicProfile,
@@ -25,6 +33,12 @@ export default function PreviewScreen() {
     setVisibility,
   } = useItsme();
   const shownProfile = visibilityPreview?.profile ?? publicProfile;
+
+  useEffect(() => {
+    // 공개 확인 dialog에서 이동한 사용자가 이전 switch가 아닌 새 화면의 맥락부터 읽도록 한다.
+    const timer = setTimeout(() => focusTarget(previewHeadingRef.current), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const closePreview = () => {
     clearError();
@@ -49,43 +63,53 @@ export default function PreviewScreen() {
     }
   };
 
+  const actionBar = (
+    <BottomActionBar
+      contained={largeText}
+      forceInFlow={largeText}
+      primary={visibilityPreview
+        ? { label: '이대로 공개하기', loading: saving, onPress: () => void publishPreview() }
+        : user && publicProfile
+          ? { label: '방문자 화면 열기', onPress: () => router.push({ pathname: '/p/[slug]', params: { slug: user.slug } }) }
+          : { label: '미리보기 닫기', onPress: closePreview }}
+      secondary={visibilityPreview
+        ? { label: '선택으로 돌아가기', disabled: saving, onPress: closePreview }
+        : user && publicProfile
+          ? { label: '미리보기 닫기', onPress: closePreview }
+          : undefined}
+    />
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <PaperBackground />
-      <View accessibilityLiveRegion="polite" style={styles.previewBanner}>
-        <Text style={styles.previewLabel}>공개 모습 미리보기</Text>
-        <Text style={styles.previewDescription}>방문자가 보게 될 화면과 같은 모습이에요.</Text>
-      </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <FocusPressable
+        accessibilityLabel="미리보기 중. 다른 사람에게도 아래 모습 그대로 보여요."
+        accessibilityLiveRegion="polite"
+        accessibilityRole="header"
+        focusable
+        ref={previewHeadingRef}
+        style={({ focused }) => [styles.previewBanner, focused && styles.previewBannerFocused]}>
+        <Text style={styles.previewLabel}>미리보기 중</Text>
+        <Text style={styles.previewDescription}>다른 사람에게도 아래 모습 그대로 보여요.</Text>
+      </FocusPressable>
+      <ScrollView contentContainerStyle={[styles.scrollContent, !largeText && styles.scrollContentWithAction]}>
         {error && !shownProfile ? (
-          <View accessibilityLiveRegion="assertive" style={styles.errorState}>
-            <Heading>공개 모습을 준비하지 못했어요.</Heading>
-            <Body>{error}</Body>
-            <ActionButton fullWidth onPress={() => void refresh()} tone="paper">다시 불러오기</ActionButton>
-          </View>
+          <StatePanel
+            action={{ label: '다시 불러오기', onPress: () => void refresh() }}
+            description={error}
+            title="공개 모습을 준비하지 못했어요."
+            variant="error"
+          />
         ) : loading || !shownProfile ? (
-          <Body accessibilityRole="progressbar">공개 모습을 준비하는 중…</Body>
+          <StatePanel description="" title="" variant="loading" />
         ) : (
           <PublicProfileView profile={shownProfile} />
         )}
         {error && shownProfile ? <Body accessibilityLiveRegion="assertive" style={styles.error}>{error}</Body> : null}
-        <View style={styles.actions}>
-          <ActionButton disabled={saving} fullWidth onPress={closePreview} tone="paper">
-            {visibilityPreview ? '취소하고 선택으로 돌아가기' : '선택 다시 보기'}
-          </ActionButton>
-          {visibilityPreview ? (
-            <ActionButton fullWidth loading={saving} onPress={() => void publishPreview()}>
-              이대로 공개하기
-            </ActionButton>
-          ) : user && publicProfile ? (
-            <ActionButton
-              fullWidth
-              onPress={() => router.push({ pathname: '/p/[slug]', params: { slug: user.slug } })}>
-              방문자 화면 열기
-            </ActionButton>
-          ) : null}
-        </View>
+        {largeText ? actionBar : null}
       </ScrollView>
+      {!largeText ? actionBar : null}
     </SafeAreaView>
   );
 }
@@ -93,10 +117,10 @@ export default function PreviewScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.paper },
   previewBanner: { width: '100%', alignItems: 'flex-start', gap: space.xs, paddingHorizontal: layout.mobileGutter, paddingVertical: space.md, borderBottomColor: colors.line, borderBottomWidth: 1, backgroundColor: colors.white },
+  previewBannerFocused: { outlineColor: colors.focus, outlineOffset: -3, outlineStyle: 'solid', outlineWidth: 3 },
   previewLabel: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 13 },
   previewDescription: { color: colors.ink, fontFamily: fonts.sansMedium, fontSize: 12 },
   scrollContent: { flexGrow: 1, width: '100%', maxWidth: layout.maxContent, alignSelf: 'center', paddingHorizontal: layout.mobileGutter, paddingTop: space.lg, paddingBottom: space.xxxl },
-  errorState: { width: '100%', alignItems: 'stretch', gap: space.md, paddingVertical: space.xl },
+  scrollContentWithAction: { paddingBottom: 152 },
   error: { color: colors.error, marginTop: space.md },
-  actions: { width: '100%', alignItems: 'stretch', gap: space.sm, marginTop: space.xl, paddingTop: space.lg, borderTopColor: colors.line, borderTopWidth: 1 },
 });

@@ -7,14 +7,10 @@ import { useItsme } from '@/state/ItsmeProvider';
 import { ActionButton } from '@/ui/ActionButton';
 import { AppShell } from '@/ui/AppShell';
 import { BrandLogo } from '@/ui/BrandLogo';
-import { FocusPressable } from '@/ui/FocusPressable';
 import { Screen } from '@/ui/Screen';
+import { ScreenHeader } from '@/ui/ScreenHeader';
 import { Body, Meta } from '@/ui/Type';
-import { colors, fonts, layout, radii, space } from '@/ui/tokens';
-
-function formatCurrentMonth() {
-  return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long' }).format(new Date());
-}
+import { colors, fonts, radii, space } from '@/ui/tokens';
 
 export default function MeScreen() {
   const router = useRouter();
@@ -25,45 +21,28 @@ export default function MeScreen() {
   return (
     <AppShell>
       <Screen>
-        <View style={styles.pageHead}>
-          <View>
-            <Text style={styles.pageTitle}>내 프로필</Text>
-            <Meta>{formatCurrentMonth()}</Meta>
-          </View>
-          <FocusPressable
-            accessibilityLabel="계정 설정"
-            accessibilityRole="button"
-            onPress={() => router.push('./account')}
-            style={({ focused, pressed }) => [styles.accountLink, focused && styles.focused, pressed && styles.pressed]}>
-            <Text style={styles.accountLinkText}>계정</Text>
-          </FocusPressable>
-          <FocusPressable
-            accessibilityLabel="다른 사람이 보는 공개 모습"
-            accessibilityRole="button"
-            onPress={() => router.push('/preview')}
-            style={({ focused, pressed }) => [styles.publicLink, focused && styles.focused, pressed && styles.pressed]}>
-            <MaterialCommunityIcons color={colors.brand} name="eye-outline" size={18} />
-            <Text style={styles.publicLinkText}>공개 모습</Text>
-          </FocusPressable>
-        </View>
+        <ScreenHeader
+          title="지금의 나"
+          trailingAction={{ label: '계정', accessibilityLabel: '계정 설정', onPress: () => router.push('./account') }}
+        />
 
         <View style={styles.cover}>
-          <View style={styles.coverTop}>
-            <View style={styles.mark}><BrandLogo markOnly size={54} /></View>
-            <View style={styles.coverBadge}>
-              <MaterialCommunityIcons color={colors.mutedInk} name="lock-outline" size={13} />
-              <Text style={styles.coverBadgeText}>나만 보기</Text>
-            </View>
+          <View accessible={false} importantForAccessibility="no-hide-descendants" style={styles.mark}>
+            <BrandLogo markOnly size={40} />
           </View>
           <View>
-            <Text accessibilityRole="header" style={styles.coverName}>{profile?.displayName ?? '지금의 나'}</Text>
-            <Body style={styles.intro}>{profile?.intro ?? '나를 설명하는 말은 언제든 달라져도 괜찮아요.'}</Body>
+            <Text style={styles.coverName}>{profile?.displayName ?? '지금의 나'}</Text>
+            {profile?.intro ? <Body style={styles.intro}>{profile.intro}</Body> : null}
           </View>
+        </View>
+        <View style={styles.publicInfo}>
+          <MaterialCommunityIcons accessible={false} color={colors.brandDeep} name="information-outline" size={18} />
+          <Meta style={styles.publicInfoText}>이름과 한 줄 소개는 공개 프로필에 보여요.</Meta>
         </View>
 
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>{hasRecords ? '내가 남긴 장면' : '지금부터 알아갈 나'}</Text>
-          {hasRecords ? <Meta>기록을 누르면 그때의 맥락과 변화를 볼 수 있어요.</Meta> : null}
+          <Text style={styles.sectionTitle}>내가 남긴 장면</Text>
+          <Meta>아래 기록은 항목마다 공개 범위를 고를 수 있어요. 새 기록은 나만 보기로 시작해요.</Meta>
         </View>
 
         {loading ? <LoadingPortrait /> : null}
@@ -87,6 +66,17 @@ export default function MeScreen() {
             <ActionButton fullWidth onPress={() => router.push('/discover')}>질문 만나기</ActionButton>
           </View>
         ) : null}
+
+        {!loading && !error ? (
+          <ActionButton
+            accessibilityLabel="다른 사람이 보는 공개 모습 미리보기"
+            fullWidth
+            onPress={() => router.push('/preview')}
+            style={styles.previewAction}
+            tone="paper">
+            공개 모습 미리보기
+          </ActionButton>
+        ) : null}
       </Screen>
     </AppShell>
   );
@@ -102,30 +92,22 @@ function LoadingPortrait() {
 }
 
 const styles = StyleSheet.create({
-  pageHead: { minHeight: 52, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm, marginBottom: space.md },
-  pageTitle: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 21, letterSpacing: -0.5 },
-  publicLink: { minHeight: layout.minTouch, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: 10, borderColor: 'transparent', borderWidth: 2, borderRadius: radii.md },
-  publicLinkText: { color: colors.brandDeep, fontFamily: fonts.sansBold, fontSize: 14 },
-  accountLink: { minHeight: layout.minTouch, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto', paddingHorizontal: 10, borderColor: 'transparent', borderWidth: 2, borderRadius: radii.md },
-  accountLinkText: { color: colors.mutedInk, fontFamily: fonts.sansBold, fontSize: 14 },
-  cover: { width: '100%', minHeight: 260, justifyContent: 'space-between', padding: space.lg, borderRadius: radii.xl, backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1 },
-  coverTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space.md },
+  cover: { width: '100%', minHeight: 280, justifyContent: 'space-between', marginTop: space.lg, padding: space.lg, borderRadius: radii.xl, backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1 },
   mark: { opacity: 0.92 },
-  coverBadge: { minHeight: 30, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: 10, borderRadius: radii.pill, backgroundColor: colors.surfaceMuted },
-  coverBadgeText: { color: colors.mutedInk, fontFamily: fonts.sansMedium, fontSize: 12 },
   coverName: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 32, letterSpacing: -1, lineHeight: 42 },
   intro: { color: colors.mutedInk, marginTop: space.xs },
+  publicInfo: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, marginTop: space.md, paddingHorizontal: space.xs },
+  publicInfoText: { flex: 1, color: colors.mutedInk },
   sectionHead: { gap: space.xs, marginTop: space.xl },
   sectionTitle: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 22, letterSpacing: -0.6, lineHeight: 31 },
   loading: { width: '100%', gap: 12, marginTop: space.md },
   loadingBlock: { width: '100%', height: 168, borderRadius: radii.lg, backgroundColor: colors.paperDeep },
   messageBox: { width: '100%', gap: space.md, marginTop: space.md, padding: 20, borderRadius: radii.lg, backgroundColor: colors.errorSoft },
   errorTitle: { color: colors.error, fontFamily: fonts.sansBold, fontSize: 18 },
-  questionCard: { width: '100%', gap: 10, marginTop: space.xl, padding: 20, borderRadius: radii.lg, backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1 },
+  questionCard: { width: '100%', gap: 10, marginTop: space.xl, marginBottom: space.md, padding: 20, borderRadius: radii.lg, backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1 },
   questionHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   questionKicker: { color: colors.brandDeep, fontFamily: fonts.sansBold },
   questionTitle: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 20, letterSpacing: -0.5, lineHeight: 30 },
   questionBody: { color: colors.mutedInk, marginBottom: space.sm },
-  focused: { borderColor: colors.focus },
-  pressed: { opacity: 0.66 },
+  previewAction: { marginTop: space.lg },
 });
