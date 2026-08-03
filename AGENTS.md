@@ -114,5 +114,7 @@
   430×932 Web 실화면 검수 증거와 600자 입력·공개 확인 회귀 테스트를 추가했다.
 - 2026-08-03: 공개 확인 dialog의 Web 배경 차단·Native modal 입력 경계를 분리하고,
   미리보기 전환 후 이전 modal이 남는 stack 회귀를 수정해 실화면으로 재검증했다.
+- 2026-08-03: GitHub Actions의 Expo 호환성 검사 변화에 맞춰 SDK 57 패치 의존성과
+  잠금 파일을 재생성하고 `npm ci`·`expo install --check` 재현 검증을 복구했다.
 - 2026-07-29: Product Designer·Frontend·Reviewer를 UI 작업마다 실제 호출하고 두 모바일
   뷰포트 실화면 증거와 독립 승인을 요구하는 디자인 품질 게이트를 추가했다.

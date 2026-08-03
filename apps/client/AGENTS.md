@@ -41,3 +41,5 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   공개 정책 카피·600자 counter·삭제 dialog와 관련 회귀 테스트·Web 시각 증거를 보강했다.
 - 2026-08-03: 공개 확인 dialog의 Web·Native 배경 차단 경계와 초기·복귀 focus를 보강하고,
   공개 미리보기 전환 후 stack에 이전 modal이 남지 않도록 상태를 먼저 초기화했다.
+- 2026-08-03: Expo 57.0.9·React Native 0.86.2와 연관 패치 패키지를 정렬하고 잠금 파일을
+  깨끗하게 재생성해 CI의 `expo install --check`가 최신 호환 매트릭스를 통과하도록 했다.
