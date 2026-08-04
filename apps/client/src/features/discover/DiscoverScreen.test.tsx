@@ -23,6 +23,19 @@ const textQuestion: Question = {
   placeholder: '예: 조급해하지 않고 쉬는 법',
 };
 
+const choiceQuestion: Question = {
+  id: 'favorite-color',
+  category: 'preference',
+  chapter: '취향에 관한 질문',
+  title: '좋아하는 색',
+  prompt: '요즘 자꾸 눈이 가는 색은 무엇인가요?',
+  kind: 'choice',
+  options: [
+    { label: '이끼 초록', value: '이끼 초록', swatch: '#456349' },
+    { label: '해 질 녘 산호', value: '해 질 녘 산호', swatch: '#A8462F' },
+  ],
+};
+
 const mockItsmeState = {
   questions: [textQuestion] as readonly Question[],
   profile: { id: 'owner-me', displayName: '지금의 나', records: [] },
@@ -58,6 +71,7 @@ describe('질문 화면', () => {
     jest.clearAllMocks();
     mockItsmeState.error = null;
     mockItsmeState.saving = false;
+    mockItsmeState.questions = [textQuestion];
     mockSaveAnswer.mockResolvedValue(true);
     jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
   });
@@ -66,12 +80,31 @@ describe('질문 화면', () => {
     jest.restoreAllMocks();
   });
 
+  test('compact 화면명보다 실제 질문 문장 하나만 heading으로 노출한다', async () => {
+    const screen = await renderScreen();
+
+    const headings = screen.getAllByRole('header');
+    expect(headings).toHaveLength(1);
+    expect(headings[0].props.children).toBe(textQuestion.prompt);
+  });
+
+  test('선택 전에는 저장 행동을 점유하지 않고 문장을 고른 뒤에만 표시한다', async () => {
+    mockItsmeState.questions = [choiceQuestion];
+    const screen = await renderScreen();
+
+    expect(screen.queryByLabelText('나만 보기로 남기기')).toBeNull();
+    fireEvent.press(screen.getByLabelText('이끼 초록'));
+
+    expect(await screen.findByLabelText('나만 보기로 남기기')).toBeTruthy();
+    expect(screen.getByText('선택됨')).toBeTruthy();
+  });
+
   test('자유 입력 counter를 표시하고 540자와 600자 경계에서만 접근성 안내를 보낸다', async () => {
     const screen = await renderScreen();
     const input = screen.getByPlaceholderText(textQuestion.placeholder!);
 
     expect(input.props.accessibilityLabelledBy).toBe('question-answer-label');
-    expect(screen.getByTestId('answer-counter', { includeHiddenElements: true }).props.children.join('')).toBe('0/600');
+    expect(screen.getByTestId('answer-counter', { includeHiddenElements: true }).props.children.join('')).toBe('0 / 600');
 
     await act(() => fireEvent.changeText(input, '가'.repeat(539)));
     expect(AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalled();
@@ -88,7 +121,7 @@ describe('질문 화면', () => {
     expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith(
       '600자를 모두 작성했어요.',
     );
-    expect(screen.getByTestId('answer-counter', { includeHiddenElements: true }).props.children.join('')).toBe('600/600');
+    expect(screen.getByTestId('answer-counter', { includeHiddenElements: true }).props.children.join('')).toBe('600 / 600');
   });
 
   test('저장 실패 뒤에도 원문을 유지하고 같은 답을 다시 시도한다', async () => {

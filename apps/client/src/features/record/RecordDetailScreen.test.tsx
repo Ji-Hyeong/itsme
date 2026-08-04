@@ -70,10 +70,10 @@ describe('기록 상세 삭제 안전장치', () => {
 
     fireEvent.press(screen.getByLabelText('이 기록 삭제하기'));
 
-    expect(await screen.findByText('이 기록을 삭제할까요?')).toBeTruthy();
+    expect(await screen.findByText('이 기록을 모두 지울까요?')).toBeTruthy();
     expect(screen.getByText('비 온 뒤의 짙은 이끼 초록')).toBeTruthy();
-    expect(screen.getByText(/과거 버전이 모두 영구 삭제되며 복구할 수 없어요/)).toBeTruthy();
-    expect(screen.getByText(/방문자 화면에서도 바로 내려가요/)).toBeTruthy();
+    expect(screen.getByText(/그때의 문장이 모두 영구 삭제돼요/)).toBeTruthy();
+    expect(screen.getByText(/방문자 화면에서도 바로 사라져요/)).toBeTruthy();
     expect(mockDeleteRecord).not.toHaveBeenCalled();
 
     fireEvent.press(screen.getByLabelText('영구 삭제하기'));
@@ -87,10 +87,10 @@ describe('기록 상세 삭제 안전장치', () => {
     const screen = await render(<RecordDetailScreen />);
 
     fireEvent.press(screen.getByLabelText('이 기록 삭제하기'));
-    expect(await screen.findByText('이 기록을 삭제할까요?')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('취소'));
+    expect(await screen.findByText('이 기록을 모두 지울까요?')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('계속 보관하기'));
 
-    await waitFor(() => expect(screen.queryByText('이 기록을 삭제할까요?')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('이 기록을 모두 지울까요?')).toBeNull());
     expect(mockDeleteRecord).not.toHaveBeenCalled();
   });
 });

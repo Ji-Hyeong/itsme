@@ -1,24 +1,22 @@
 import { useRouter } from 'expo-router';
 import type { ComponentRef } from 'react';
 import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PublicProfileView } from '@/features/profile/PublicProfileView';
 import { useAuth } from '@/state/AuthProvider';
 import { useItsme } from '@/state/ItsmeProvider';
-import { BottomActionBar } from '@/ui/BottomActionBar';
 import { FocusPressable } from '@/ui/FocusPressable';
+import { FolioAction, FolioState, PreviewRibbon, useResponsiveGutter } from '@/ui/Folio';
 import { PaperBackground } from '@/ui/PaperBackground';
-import { StatePanel } from '@/ui/StatePanel';
 import { Body } from '@/ui/Type';
 import { focusTarget } from '@/ui/focus-target';
-import { colors, fonts, layout, space } from '@/ui/tokens';
+import { colors, layout, space } from '@/ui/tokens';
 
 export default function PreviewScreen() {
   const router = useRouter();
-  const { fontScale } = useWindowDimensions();
-  const largeText = fontScale >= layout.largeTextScale;
+  const gutter = useResponsiveGutter();
   const previewHeadingRef = useRef<ComponentRef<typeof FocusPressable>>(null);
   const { user } = useAuth();
   const {
@@ -63,64 +61,47 @@ export default function PreviewScreen() {
     }
   };
 
-  const actionBar = (
-    <BottomActionBar
-      contained={largeText}
-      forceInFlow={largeText}
-      primary={visibilityPreview
-        ? { label: '이대로 공개하기', loading: saving, onPress: () => void publishPreview() }
-        : user && publicProfile
-          ? { label: '방문자 화면 열기', onPress: () => router.push({ pathname: '/p/[slug]', params: { slug: user.slug } }) }
-          : { label: '미리보기 닫기', onPress: closePreview }}
-      secondary={visibilityPreview
-        ? { label: '선택으로 돌아가기', disabled: saving, onPress: closePreview }
-        : user && publicProfile
-          ? { label: '미리보기 닫기', onPress: closePreview }
-          : undefined}
-    />
-  );
-
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <PaperBackground />
-      <FocusPressable
-        accessibilityLabel="미리보기 중. 다른 사람에게도 아래 모습 그대로 보여요."
-        accessibilityLiveRegion="polite"
-        accessibilityRole="header"
-        focusable
-        ref={previewHeadingRef}
-        style={({ focused }) => [styles.previewBanner, focused && styles.previewBannerFocused]}>
-        <Text style={styles.previewLabel}>미리보기 중</Text>
-        <Text style={styles.previewDescription}>다른 사람에게도 아래 모습 그대로 보여요.</Text>
-      </FocusPressable>
-      <ScrollView contentContainerStyle={[styles.scrollContent, !largeText && styles.scrollContentWithAction]}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]} testID="preview-scroll">
+        <PreviewRibbon ribbonRef={previewHeadingRef} />
         {error && !shownProfile ? (
-          <StatePanel
+          <FolioState
             action={{ label: '다시 불러오기', onPress: () => void refresh() }}
             description={error}
             title="공개 모습을 준비하지 못했어요."
             variant="error"
           />
         ) : loading || !shownProfile ? (
-          <StatePanel description="" title="" variant="loading" />
+          <FolioState skeleton="cover" variant="loading" />
         ) : (
-          <PublicProfileView profile={shownProfile} />
+          <View style={styles.rendererFrame} testID="preview-renderer-frame"><PublicProfileView profile={shownProfile} /></View>
         )}
         {error && shownProfile ? <Body accessibilityLiveRegion="assertive" style={styles.error}>{error}</Body> : null}
-        {largeText ? actionBar : null}
+        <View style={styles.actions}>
+          <FolioAction loading={visibilityPreview ? saving : false} onPress={visibilityPreview
+            ? () => void publishPreview()
+            : user && publicProfile
+              ? () => router.push({ pathname: '/p/[slug]', params: { slug: user.slug } })
+              : closePreview}>
+            {visibilityPreview ? (saving ? '공개하는 중…' : '이대로 공개하기') : user && publicProfile ? '방문자 화면 열기' : '미리보기 닫기'}
+          </FolioAction>
+          {visibilityPreview || (user && publicProfile) ? (
+            <FolioAction disabled={saving} onPress={closePreview} tone="quiet">
+              {visibilityPreview ? '선택으로 돌아가기' : '미리보기 닫기'}
+            </FolioAction>
+          ) : null}
+        </View>
       </ScrollView>
-      {!largeText ? actionBar : null}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.paper },
-  previewBanner: { width: '100%', alignItems: 'flex-start', gap: space.xs, paddingHorizontal: layout.mobileGutter, paddingVertical: space.md, borderBottomColor: colors.line, borderBottomWidth: 1, backgroundColor: colors.white },
-  previewBannerFocused: { outlineColor: colors.focus, outlineOffset: -3, outlineStyle: 'solid', outlineWidth: 3 },
-  previewLabel: { color: colors.ink, fontFamily: fonts.sansBold, fontSize: 13 },
-  previewDescription: { color: colors.ink, fontFamily: fonts.sansMedium, fontSize: 12 },
-  scrollContent: { flexGrow: 1, width: '100%', maxWidth: layout.maxContent, alignSelf: 'center', paddingHorizontal: layout.mobileGutter, paddingTop: space.lg, paddingBottom: space.xxxl },
-  scrollContentWithAction: { paddingBottom: 152 },
+  scrollContent: { flexGrow: 1, width: '100%', maxWidth: layout.maxContent, alignSelf: 'center', paddingTop: space.sm, paddingBottom: space.xxxl },
+  rendererFrame: { flexGrow: 1, width: '100%', padding: space.sm, backgroundColor: colors.surfaceRaised },
+  actions: { width: '100%', gap: space.xs, marginTop: space.lg },
   error: { color: colors.error, marginTop: space.md },
 });

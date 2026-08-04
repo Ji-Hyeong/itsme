@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { FocusPressable } from '@/ui/FocusPressable';
-import { colors, layout, radii, space, typeScale } from '@/ui/tokens';
+import { colors, layout, space, typeScale } from '@/ui/tokens';
 
 type PressableProps = ComponentProps<typeof FocusPressable>;
 
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: space.md,
     paddingVertical: space.smMd,
-    borderRadius: radii.md,
+    borderRadius: 12,
     borderWidth: 1,
   },
   fullWidth: { width: '100%' },

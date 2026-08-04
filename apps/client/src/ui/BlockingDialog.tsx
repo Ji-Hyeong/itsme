@@ -8,13 +8,14 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import { ActionButton } from '@/ui/ActionButton';
 import { FocusPressable } from '@/ui/FocusPressable';
 import { Body } from '@/ui/Type';
 import { focusTarget, type FocusTarget } from '@/ui/focus-target';
-import { colors, layout, radii, space, typeScale } from '@/ui/tokens';
+import { colors, fonts, layout, radii, screenGutter, space, typeScale } from '@/ui/tokens';
 
 export type BlockingDialogProps = {
   visible: boolean;
@@ -37,6 +38,44 @@ function isHTMLElement(value: unknown): value is HTMLElement {
   return typeof HTMLElement !== 'undefined' && value instanceof HTMLElement;
 }
 
+/** Web dialog의 키보드 경계를 한곳에서 관리해 portal 안팎으로 포커스가 새지 않게 한다. */
+export function installWebDialogKeyboardGuard(
+  dialog: HTMLElement,
+  cancel: () => void,
+  ownerDocument: Document = document,
+) {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancel();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [role="button"]:not([aria-disabled="true"]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && ownerDocument.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && ownerDocument.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  ownerDocument.addEventListener('keydown', handleKeyDown);
+  return () => ownerDocument.removeEventListener('keydown', handleKeyDown);
+}
+
 export function BlockingDialog({
   visible,
   title,
@@ -53,6 +92,7 @@ export function BlockingDialog({
   restoreFocus = true,
   testID,
 }: BlockingDialogProps) {
+  const { width } = useWindowDimensions();
   const titleRef = useRef<ComponentRef<typeof FocusPressable>>(null);
   const dialogRef = useRef<ComponentRef<typeof View>>(null);
   const restoreFocusLatestRef = useRef(restoreFocus);
@@ -73,37 +113,8 @@ export function BlockingDialog({
 
   useEffect(() => {
     if (!visible || Platform.OS !== 'web') return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        cancel();
-        return;
-      }
-      if (event.key !== 'Tab' || !isHTMLElement(dialogRef.current)) return;
-
-      const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [role="button"]:not([aria-disabled="true"]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-      if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    if (!isHTMLElement(dialogRef.current)) return;
+    return installWebDialogKeyboardGuard(dialogRef.current, cancel);
   }, [cancel, visible]);
 
   useEffect(() => {
@@ -123,11 +134,12 @@ export function BlockingDialog({
       onRequestClose={cancel}
       onShow={focusTitle}
       statusBarTranslucent
+      testID={testID ? `${testID}-modal` : 'blocking-dialog-modal'}
       transparent
       visible={visible}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.modalRoot}>
+        style={[styles.modalRoot, { paddingHorizontal: screenGutter(width) }]}>
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.scrim} />
         <View
           accessibilityViewIsModal
@@ -149,7 +161,8 @@ export function BlockingDialog({
             style={styles.bodyScroll}>
             {target ? (
               <View style={styles.target}>
-                <Body>{target}</Body>
+                <View accessible={false} style={styles.targetRegister} />
+                <Text style={styles.targetText}>{target}</Text>
               </View>
             ) : null}
             <Body style={styles.description}>{description}</Body>
@@ -182,7 +195,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: layout.mobileGutter,
     paddingVertical: space.mdLg,
   },
   scrim: {
@@ -214,11 +226,14 @@ const styles = StyleSheet.create({
   bodyScroll: { flexShrink: 1 },
   bodyContent: { gap: space.md },
   target: {
+    position: 'relative',
     width: '100%',
-    padding: space.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
+    paddingVertical: space.sm,
+    paddingLeft: space.md,
+    backgroundColor: colors.surface,
   },
+  targetRegister: { position: 'absolute', top: space.sm, bottom: space.sm, left: 0, width: 3, backgroundColor: colors.apricot },
+  targetText: { color: colors.ink, fontFamily: fonts.serifBold, fontSize: 22, lineHeight: 34 },
   description: { color: colors.muted },
   error: { color: colors.error },
   actions: { width: '100%', gap: space.sm },

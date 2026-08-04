@@ -14,6 +14,8 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
+    MaruBuri_400Regular: require('../../assets/fonts/MaruBuri-Regular.otf'),
+    MaruBuri_600SemiBold: require('../../assets/fonts/MaruBuri-SemiBold.otf'),
     Pretendard_400Regular: require('../../assets/fonts/Pretendard-Regular.otf'),
     Pretendard_500Medium: require('../../assets/fonts/Pretendard-Medium.otf'),
     Pretendard_600SemiBold: require('../../assets/fonts/Pretendard-SemiBold.otf'),

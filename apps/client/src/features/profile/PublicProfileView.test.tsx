@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { PublicProfileSchema } from '@/domain/profile';
 import { PublicProfileView } from '@/features/profile/PublicProfileView';
@@ -12,7 +13,7 @@ describe('PublicProfileView', () => {
 
     const screen = await render(<PublicProfileView profile={profile} />);
 
-    expect(screen.getByText('공개한 기록은 아직 없어요.')).toBeTruthy();
+    expect(screen.getByText('공개한 문장은 아직 없어요.')).toBeTruthy();
     expect(screen.queryByText(/미완성|완성도|팔로워|좋아요/)).toBeNull();
   });
 
@@ -32,5 +33,7 @@ describe('PublicProfileView', () => {
 
     expect(screen.getByText('이끼 초록')).toBeTruthy();
     expect(screen.getByText('좋아하는 색')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('public-folio-page').props.style).flexGrow).toBe(1);
+    expect(StyleSheet.flatten(screen.getByTestId('public-folio-footer').props.style).marginTop).toBe('auto');
   });
 });

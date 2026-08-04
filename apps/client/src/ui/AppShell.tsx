@@ -38,7 +38,8 @@ export function AppShell({ backgroundBlocked = false, children }: { backgroundBl
         importantForAccessibility={webBackgroundBlocked ? 'no-hide-descendants' : 'auto'}
         // Native Modal은 자체가 배경 입력을 차단한다. 논리적 부모에 none을 주면 모달 버튼까지 차단될 수 있어 Web portal에만 적용한다.
         pointerEvents={webBackgroundBlocked ? 'none' : 'auto'}
-        style={styles.mobileFrame}>
+        style={styles.mobileFrame}
+        testID="app-background">
         <View style={styles.content}>{children}</View>
         <View
           accessibilityLabel="주요 메뉴"

@@ -9,13 +9,15 @@ import { useAuth } from '@/state/AuthProvider';
 import { ActionButton } from '@/ui/ActionButton';
 import { BrandLogo } from '@/ui/BrandLogo';
 import { FocusPressable } from '@/ui/FocusPressable';
-import { Body, Heading, Meta } from '@/ui/Type';
+import { useResponsiveGutter } from '@/ui/Folio';
+import { Body, Meta, Question } from '@/ui/Type';
 import { colors, fonts, layout, radii, space } from '@/ui/tokens';
 
 type FieldErrors = Partial<Record<'email' | 'password', string>>;
 
 export default function AuthScreen() {
   const router = useRouter();
+  const gutter = useResponsiveGutter();
   const { busy, error, dismissError, login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,11 +45,11 @@ export default function AuthScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView automaticallyAdjustKeyboardInsets contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.frame}>
+        <View style={[styles.frame, { paddingHorizontal: gutter }]}>
           <BrandLogo />
           <View style={styles.copy}>
-            <Heading accessibilityRole="header">내 기록으로 돌아가기</Heading>
-            <Body style={styles.description}>초대받은 내부 테스터 계정으로 로그인해 주세요. 남겨 둔 장면과 변화가 같은 자리에서 기다리고 있어요.</Body>
+            <Question accessibilityRole="header">내 문장으로 돌아가기</Question>
+            <Body style={styles.description}>초대받은 계정으로 로그인하면 남겨 둔 문장과 그때의 나를 이어서 읽을 수 있어요.</Body>
           </View>
           <View style={styles.form}>
             <Field
@@ -109,16 +111,26 @@ type FieldProps = ComponentProps<typeof TextInput> & {
   trailingAction?: ReactNode;
 };
 
-function Field({ error, inputRef, label, trailingAction, style, ...props }: FieldProps) {
+function Field({ error, inputRef, label, trailingAction, style, onBlur, onFocus, ...props }: FieldProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputRow}>
         <TextInput
           accessibilityLabel={label}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
           placeholderTextColor={colors.faintInk}
           ref={inputRef}
-          style={[styles.input, trailingAction ? styles.inputWithAction : null, error ? styles.inputError : null, style]}
+          style={[styles.input, trailingAction ? styles.inputWithAction : null, error ? styles.inputError : null, focused && styles.inputFocused, style]}
           {...props}
         />
         {trailingAction ? <View style={styles.trailingAction}>{trailingAction}</View> : null}
@@ -139,7 +151,7 @@ function validate(email: string, password: string): FieldErrors {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, alignItems: 'center', backgroundColor: colors.paperDeep },
   scrollContent: { flexGrow: 1 },
-  frame: { width: '100%', maxWidth: layout.maxContent, alignSelf: 'center', paddingHorizontal: layout.mobileGutter, paddingTop: space.lg, paddingBottom: space.xxl, backgroundColor: colors.paper },
+  frame: { width: '100%', maxWidth: layout.maxContent, alignSelf: 'center', paddingTop: space.lg, paddingBottom: space.xxl, backgroundColor: colors.paper },
   copy: { marginTop: space.xl },
   description: { color: colors.mutedInk, marginTop: space.sm },
   form: { width: '100%', gap: space.md, marginTop: space.xl },
@@ -149,6 +161,7 @@ const styles = StyleSheet.create({
   input: { width: '100%', minHeight: 52, color: colors.ink, fontFamily: fonts.sans, fontSize: 16, paddingHorizontal: space.md, borderColor: colors.line, borderWidth: 1, borderRadius: radii.md, backgroundColor: colors.white },
   inputWithAction: { paddingRight: 96 },
   inputError: { borderColor: colors.error, borderWidth: 2 },
+  inputFocused: { outlineColor: colors.focus, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 3 },
   trailingAction: { position: 'absolute', top: 4, right: 4 },
   passwordToggle: { minWidth: 84, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, borderColor: 'transparent', borderWidth: 2, borderRadius: radii.sm },
   passwordToggleText: { color: colors.brandDeep, fontFamily: fonts.sansBold, fontSize: 13 },

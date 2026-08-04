@@ -1,5 +1,6 @@
 import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native';
 
 import ShareScreen from '@/app/share';
 import type { OwnerProfile } from '@/domain/profile';
@@ -94,18 +95,19 @@ describe('공개 선택 화면', () => {
     const screen = await renderScreen();
 
     expect(screen.getByText(
-      '이름과 한 줄 소개는 기본으로 보여요. 아래 기록만 하나씩 공개하거나 숨길 수 있어요.',
+      '이름과 한 줄 소개는 기본으로 보여요. 기록은 하나씩 선택할 수 있어요.',
     )).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('share-preview-action').props.style).marginTop).toBe('auto');
 
-    await act(() => fireEvent.press(screen.getByLabelText('배우는 중, 현재 나만 보기')));
+    await act(() => fireEvent.press(screen.getByLabelText('배우는 중, 현재 나만 보기, 보여주기')));
 
     await waitFor(() => {
-      expect(screen.getByText('과거 기록, 변화 이유와 작성 맥락은 공개되지 않아요.')).toBeTruthy();
+      expect(screen.getByText('지금 문장만 공개돼요. 이전 기록과 남긴 이유는 나만 볼 수 있어요.')).toBeTruthy();
     });
     expect(screen.getByText('천천히 쉬는 법')).toBeTruthy();
 
     await act(() => fireEvent.press(
-      within(screen.getByTestId('visibility-confirm-dialog')).getByLabelText('공개 모습 미리보기'),
+      within(screen.getByTestId('visibility-confirm-dialog')).getByLabelText('공개 모습에서 확인하기'),
     ));
 
     await waitFor(() => {
@@ -122,13 +124,13 @@ describe('공개 선택 화면', () => {
   test('공개 해제는 확인 뒤 해당 기록만 비공개로 바꾼다', async () => {
     const screen = await renderScreen();
 
-    await act(() => fireEvent.press(screen.getByLabelText('좋아하는 색, 현재 공개')));
+    await act(() => fireEvent.press(screen.getByLabelText('좋아하는 색, 현재 공개, 숨기기')));
     await waitFor(() => {
-      expect(screen.getByText('방문자 화면에서 바로 사라지고 내 기록은 남아요.')).toBeTruthy();
+      expect(screen.getByText('방문자 화면에서는 바로 사라지고 내 기록은 남아요.')).toBeTruthy();
     });
 
     await act(() => fireEvent.press(
-      within(screen.getByTestId('visibility-confirm-dialog')).getByLabelText('공개 해제하기'),
+      within(screen.getByTestId('visibility-confirm-dialog')).getByLabelText('나만 보기로 바꾸기'),
     ));
 
     await waitFor(() => {

@@ -6,14 +6,11 @@ import { AccessibilityInfo, StyleSheet, Text, TextInput, useWindowDimensions, Vi
 import { categoryMeta, getCurrentVersion } from '@/domain/profile';
 import { categoryStyle } from '@/features/profile/category-style';
 import { useItsme } from '@/state/ItsmeProvider';
-import { ActionButton } from '@/ui/ActionButton';
 import { AppShell } from '@/ui/AppShell';
 import { BlockingDialog } from '@/ui/BlockingDialog';
+import { FolioAction, FolioEntry, FolioHeader, FolioState, LayeredHistory } from '@/ui/Folio';
 import type { FocusPressable } from '@/ui/FocusPressable';
 import { Screen } from '@/ui/Screen';
-import { ScreenHeader } from '@/ui/ScreenHeader';
-import { SceneCard } from '@/ui/SceneCard';
-import { StatePanel } from '@/ui/StatePanel';
 import { Body, Meta } from '@/ui/Type';
 import { colors, layout, radii, space, typeScale } from '@/ui/tokens';
 
@@ -49,8 +46,8 @@ export default function RecordDetailScreen() {
     return (
       <AppShell>
         <Screen>
-          <ScreenHeader backAction={{ label: '지금의 나로', onPress: () => router.replace('/me') }} title="기록 상세" />
-          <StatePanel description="현재 문장과 지나온 기록을 준비하고 있어요." title="기록을 불러오는 중" variant="loading" />
+          <FolioHeader backAction={{ label: '나로', onPress: () => router.replace('/me') }} title="기록" />
+          <FolioState skeleton="history" variant="loading" />
         </Screen>
       </AppShell>
     );
@@ -60,8 +57,8 @@ export default function RecordDetailScreen() {
     return (
       <AppShell>
         <Screen>
-          <ScreenHeader backAction={{ label: '지금의 나로', onPress: () => router.replace('/me') }} title="기록 상세" />
-          <StatePanel
+          <FolioHeader backAction={{ label: '나로', onPress: () => router.replace('/me') }} title="기록" />
+          <FolioState
             action={{ label: '다시 불러오기', onPress: () => void refresh() }}
             description={error}
             title="기록을 불러오지 못했어요."
@@ -76,8 +73,8 @@ export default function RecordDetailScreen() {
     return (
       <AppShell>
         <Screen>
-          <ScreenHeader backAction={{ label: '지금의 나로', onPress: () => router.replace('/me') }} title="기록 상세" />
-          <StatePanel
+          <FolioHeader backAction={{ label: '나로', onPress: () => router.replace('/me') }} title="기록" />
+          <FolioState
             action={{ label: '지금의 나로 돌아가기', onPress: () => router.replace('/me') }}
             description="내 기록은 로그인한 나만 열 수 있어요."
             title="이 기록을 볼 수 없어요."
@@ -92,8 +89,8 @@ export default function RecordDetailScreen() {
     return (
       <AppShell>
         <Screen>
-          <ScreenHeader backAction={{ label: '지금의 나로', onPress: () => router.replace('/me') }} title="기록 상세" />
-          <StatePanel
+          <FolioHeader backAction={{ label: '나로', onPress: () => router.replace('/me') }} title="기록" />
+          <FolioState
             action={{ label: '지금의 나로 돌아가기', onPress: () => router.replace('/me') }}
             description="삭제되었거나 주소가 바뀐 기록일 수 있어요."
             title="이 기록을 찾지 못했어요."
@@ -144,24 +141,24 @@ export default function RecordDetailScreen() {
     <AppShell backgroundBlocked={confirmingDelete}>
       <>
         <Screen>
-          <ScreenHeader
+          <FolioHeader
             backAction={{
               accessibilityLabel: '지금의 나로 돌아가기',
-              label: '지금의 나로',
+              label: '나로',
               onPress: () => router.back(),
             }}
-            description={categoryMeta[record.category].label}
-            title={record.title}
+            title="기록"
           />
 
           <View style={styles.currentCard}>
-            <SceneCard
+            <FolioEntry
               accentColor={tone.accent}
               answer={current.answer}
               category={categoryMeta[record.category].label}
               date={formatDate(current.recordedAt)}
+              index={categoryStyle[record.category].folioIndex}
               title={record.title}
-              truncateAnswer={false}
+              truncate={false}
               visibility={record.visibility}
             />
           </View>
@@ -177,22 +174,21 @@ export default function RecordDetailScreen() {
             <View accessibilityLiveRegion="polite" style={styles.privacyNotice}>
               <Text style={styles.sectionTitle}>새 문장은 나만 보기로 돌아왔어요.</Text>
               <Body style={styles.muted}>공개 전에 실제 모습을 다시 확인해 주세요.</Body>
-              <ActionButton fullWidth onPress={() => router.push('/share')} tone="paper">공개 범위 살펴보기</ActionButton>
+              <FolioAction onPress={() => router.push('/share')} tone="quiet">공개 모습 다시 확인하기</FolioAction>
             </View>
           ) : null}
 
           {!editing ? (
             <View style={styles.actions}>
-              <ActionButton
-                fullWidth
+              <FolioAction
                 onPress={() => {
                   clearError();
                   setAnswer(current.answer);
                   setEditing(true);
                 }}>
-                지금의 답으로 새로 남기기
-              </ActionButton>
-              <ActionButton fullWidth onPress={() => router.push('/share')} tone="paper">공개 범위 살펴보기</ActionButton>
+                새 문장으로 남기기
+              </FolioAction>
+              <FolioAction onPress={() => router.push('/share')} tone="quiet">공개 범위 보기</FolioAction>
               <Meta>새 답을 남겨도 이전 기록은 그대로 남아 있어요.</Meta>
             </View>
           ) : (
@@ -225,18 +221,17 @@ export default function RecordDetailScreen() {
               <Counter current={nextStep.length} max={600} />
               {error ? <Body accessibilityLiveRegion="assertive" style={styles.error}>{error}</Body> : null}
               <View style={styles.editorActions}>
-                <ActionButton fullWidth disabled={!answer.trim()} loading={saving} onPress={() => void submitUpdate()}>
-                  새 기록으로 남기기
-                </ActionButton>
-                <ActionButton fullWidth disabled={saving} onPress={() => setEditing(false)} tone="quiet">취소</ActionButton>
+                <FolioAction disabled={!answer.trim()} loading={saving} onPress={() => void submitUpdate()}>
+                  {saving ? '남기는 중…' : '새 문장으로 남기기'}
+                </FolioAction>
+                <FolioAction disabled={saving} onPress={() => setEditing(false)} tone="quiet">편집 취소</FolioAction>
               </View>
             </View>
           )}
 
-          <View style={styles.history}>
+          <LayeredHistory accentColor={tone.accent}>
             <View style={styles.historyHeader}>
-              <Text style={styles.sectionTitle}>지나온 기록</Text>
-              <Meta>{record.versions.length}개의 문장이 남아 있어요</Meta>
+              <Text style={styles.sectionTitle}>그때의 문장들</Text>
             </View>
             {record.versions.toReversed().map((version, index) => (
               <View key={version.id} style={[styles.historyItem, largeText && styles.largeTextHistoryItem]}>
@@ -249,23 +244,23 @@ export default function RecordDetailScreen() {
                 </View>
               </View>
             ))}
-          </View>
+          </LayeredHistory>
 
           {!editing ? (
             <View style={styles.deleteAction}>
-              <ActionButton fullWidth onPress={() => { clearError(); setConfirmingDelete(true); }} ref={deleteButtonRef} tone="quiet">
+              <FolioAction onPress={() => { clearError(); setConfirmingDelete(true); }} ref={deleteButtonRef} tone="quiet">
                 이 기록 삭제하기
-              </ActionButton>
+              </FolioAction>
             </View>
           ) : null}
         </Screen>
 
         <BlockingDialog
           busy={deleting || saving}
-          cancelLabel="취소"
+          cancelLabel="계속 보관하기"
           confirmLabel="영구 삭제하기"
           danger
-          description="현재 문장과 과거 버전이 모두 영구 삭제되며 복구할 수 없어요. 공개 중이라면 방문자 화면에서도 바로 내려가요."
+          description="현재 문장과 그때의 문장이 모두 영구 삭제돼요. 공개 중이면 방문자 화면에서도 바로 사라져요."
           error={confirmingDelete ? error ?? undefined : undefined}
           onCancel={() => {
             if (deleting || saving) return;
@@ -275,7 +270,7 @@ export default function RecordDetailScreen() {
           onConfirm={() => void confirmDelete()}
           returnFocusRef={deleteButtonRef}
           target={current.answer}
-          title="이 기록을 삭제할까요?"
+          title="이 기록을 모두 지울까요?"
           visible={confirmingDelete}
         />
       </>
@@ -292,13 +287,17 @@ type FieldProps = {
 };
 
 function Field(props: FieldProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <TextInput
       accessibilityHint={`${props.maxLength}자까지 입력할 수 있어요.`}
       multiline
+      onBlur={() => setFocused(false)}
+      onFocus={() => setFocused(true)}
       placeholderTextColor={colors.muted}
       scrollEnabled={false}
-      style={styles.input}
+      style={[styles.input, focused && styles.inputFocused]}
       textAlignVertical="top"
       {...props}
     />
@@ -311,17 +310,17 @@ function Counter({ current, max }: { current: number; max: number }) {
 
 const styles = StyleSheet.create({
   currentCard: { width: '100%', marginTop: space.lg },
-  context: { width: '100%', gap: space.sm, marginTop: space.smMd, padding: space.mdLg, borderRadius: radii.lg, backgroundColor: colors.apricotSoft },
+  context: { width: '100%', gap: space.sm, marginTop: space.smMd, paddingVertical: space.mdLg, borderTopColor: colors.lineSubtle, borderTopWidth: 1 },
   sectionTitle: { color: colors.ink, ...typeScale.sectionTitle },
   actions: { width: '100%', alignItems: 'stretch', gap: space.sm, marginTop: space.lg },
-  editor: { width: '100%', gap: space.smMd, marginTop: space.xl, padding: space.mdLg, borderRadius: radii.lg, backgroundColor: colors.surface },
+  editor: { width: '100%', gap: space.smMd, marginTop: space.xl, paddingVertical: space.mdLg, borderTopColor: colors.lineStrong, borderTopWidth: 1 },
   input: { width: '100%', minHeight: 168, color: colors.ink, ...typeScale.body, padding: space.md, borderColor: colors.lineStrong, borderWidth: 1, borderRadius: radii.md, backgroundColor: colors.surface },
+  inputFocused: { outlineColor: colors.focus, outlineOffset: 2, outlineStyle: 'solid', outlineWidth: 3 },
   counter: { alignSelf: 'flex-end' },
   editorActions: { width: '100%', alignItems: 'stretch', gap: space.sm },
   error: { color: colors.error },
-  history: { width: '100%', overflow: 'hidden', marginTop: space.xl, borderColor: colors.lineSubtle, borderWidth: 1, borderRadius: radii.lg, backgroundColor: colors.surface },
-  privacyNotice: { width: '100%', gap: space.sm, marginTop: space.lg, padding: space.mdLg, borderColor: colors.indigo, borderWidth: 1, borderRadius: radii.lg, backgroundColor: colors.indigoSoft },
-  historyHeader: { width: '100%', gap: space.xs, padding: space.mdLg, borderBottomColor: colors.lineSubtle, borderBottomWidth: 1, backgroundColor: colors.surfaceMuted },
+  privacyNotice: { width: '100%', gap: space.sm, marginTop: space.lg, paddingVertical: space.mdLg, borderTopColor: colors.indigo, borderTopWidth: 3 },
+  historyHeader: { width: '100%', gap: space.xs, padding: space.mdLg, borderBottomColor: colors.lineSubtle, borderBottomWidth: 1, backgroundColor: colors.surface },
   historyItem: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: space.smMd, padding: space.mdLg, borderBottomColor: colors.lineSubtle, borderBottomWidth: 1 },
   largeTextHistoryItem: { flexDirection: 'column' },
   historyMark: { width: 8, height: 8, marginTop: 7, borderRadius: radii.pill, backgroundColor: colors.lineStrong },

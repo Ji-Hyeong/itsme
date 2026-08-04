@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import PreviewScreen from '@/app/preview';
 
@@ -52,7 +53,9 @@ describe('공개 후보 미리보기 확정', () => {
     expect(screen.getByText('천천히 쉬는 법')).toBeTruthy();
     expect(mockSetVisibility).not.toHaveBeenCalled();
     await waitFor(() => expect(mockFocusTarget).toHaveBeenCalledTimes(1));
-    expect(screen.getByLabelText('미리보기 중. 다른 사람에게도 아래 모습 그대로 보여요.')).toBeTruthy();
+    expect(screen.getByLabelText('공개 전 미리보기. 다른 사람도 이 모습 그대로 봐요.')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('preview-scroll').props.contentContainerStyle).paddingTop).toBeGreaterThanOrEqual(5);
+    expect(StyleSheet.flatten(screen.getByTestId('preview-renderer-frame').props.style).flexGrow).toBe(1);
 
     fireEvent.press(screen.getByText('이대로 공개하기'));
 
@@ -84,8 +87,7 @@ describe('공개 후보 미리보기 확정', () => {
     try {
       const screen = await render(<PreviewScreen />);
 
-      expect(screen.getAllByText('공개한 기록은 아직 없어요.')).toHaveLength(1);
-      expect(screen.getAllByText('이름과 한 줄 소개만 보여요.')).toHaveLength(1);
+      expect(screen.getAllByText('공개한 문장은 아직 없어요.')).toHaveLength(1);
     } finally {
       previewProfile.records.splice(0, previewProfile.records.length, ...originalRecords);
     }

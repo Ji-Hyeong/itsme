@@ -14,10 +14,9 @@ import { categoryStyle } from '@/features/profile/category-style';
 import { useItsme } from '@/state/ItsmeProvider';
 import { AppShell } from '@/ui/AppShell';
 import { FocusPressable } from '@/ui/FocusPressable';
+import { FolioHeader, FolioState, LayeredHistory } from '@/ui/Folio';
 import { Screen } from '@/ui/Screen';
-import { ScreenHeader } from '@/ui/ScreenHeader';
-import { StatePanel } from '@/ui/StatePanel';
-import { Body, Meta } from '@/ui/Type';
+import { Body, Meta, Question } from '@/ui/Type';
 import { colors, fonts, layout, radii, space, typeScale } from '@/ui/tokens';
 
 function formatDate(value: string) {
@@ -65,14 +64,15 @@ export default function TimelineScreen() {
   return (
     <AppShell>
       <Screen>
-        <ScreenHeader
-          description="달라진 문장을 보여드릴게요. 그 의미는 오직 내가 정해요."
-          title="변화는 기록이 된다"
-        />
+        <FolioHeader heading={false} title="변화" />
+        <View style={styles.lead}>
+          <Question accessibilityRole="header">같은 질문에, 다른 날의 내가 남긴 문장</Question>
+          <Body style={styles.leadDescription}>달라진 뜻은 내가 정해요.</Body>
+        </View>
 
         {loading ? <TimelineSkeleton /> : null}
         {!loading && error && !profile ? (
-          <StatePanel
+          <FolioState
             action={{ label: '다시 불러오기', onPress: () => void refresh() }}
             description={error}
             title="변화 기록을 불러오지 못했어요."
@@ -80,10 +80,10 @@ export default function TimelineScreen() {
           />
         ) : null}
         {!loading && profile && changedRecords.length === 0 ? (
-          <StatePanel
-            action={{ label: '현재 기록 살펴보기', onPress: () => router.push('/me') }}
-            description="지금의 답은 그대로 잘 보관하고 있어요."
-            title="아직 비교할 과거 문장이 없어요."
+          <FolioState
+            action={{ label: '현재 문장 읽기', onPress: () => router.push('/me') }}
+            description="지금의 문장은 그대로 보관하고 있어요."
+            title="아직 나란히 읽을 이전 문장은 없어요."
             variant="empty"
           />
         ) : null}
@@ -93,10 +93,9 @@ export default function TimelineScreen() {
             {changedRecords.map((record) => {
               const tone = categoryStyle[record.category];
               return (
-                <View key={record.id} style={styles.recordGroup}>
-                  <View accessible={false} style={[styles.categoryBar, { backgroundColor: tone.accent }]} />
+                <LayeredHistory accentColor={tone.accent} key={record.id}>
                   <View style={styles.groupHeader}>
-                    <Meta>{categoryMeta[record.category].label}</Meta>
+                    <Meta>{categoryStyle[record.category].folioIndex} {categoryMeta[record.category].label}</Meta>
                     <Text style={styles.groupName}>{record.title}</Text>
                   </View>
                   <View style={styles.events}>
@@ -118,7 +117,7 @@ export default function TimelineScreen() {
                       );
                     })}
                   </View>
-                </View>
+                </LayeredHistory>
               );
             })}
           </View>
@@ -197,30 +196,19 @@ function TimelineEvent({
 }
 
 function TimelineSkeleton() {
-  return (
-    <View accessibilityLabel="변화 기록 불러오는 중" accessibilityRole="progressbar" style={styles.timeline}>
-      {[0, 1].map((item) => (
-        <View key={item} style={styles.skeletonGroup}>
-          <View style={styles.skeletonMeta} />
-          <View style={styles.skeletonTitle} />
-          <View style={styles.skeletonAnswer} />
-          <View style={styles.skeletonAnswerShort} />
-        </View>
-      ))}
-    </View>
-  );
+  return <View style={styles.timeline}><FolioState skeleton="history" variant="loading" /></View>;
 }
 
 const styles = StyleSheet.create({
+  lead: { width: '100%', gap: space.sm, marginTop: space.sm },
+  leadDescription: { color: colors.muted },
   timeline: { width: '100%', marginTop: space.lg, marginBottom: space.xxl, gap: space.xl },
-  recordGroup: { width: '100%', overflow: 'hidden', borderColor: colors.lineSubtle, borderWidth: 1, borderRadius: radii.lg, backgroundColor: colors.surface },
-  categoryBar: { width: '100%', height: 4 },
   groupHeader: { width: '100%', gap: space.xs, padding: space.mdLg, borderBottomColor: colors.lineSubtle, borderBottomWidth: 1 },
   groupName: { color: colors.ink, ...typeScale.sectionTitle },
   events: { width: '100%' },
   event: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: space.smMd, padding: space.mdLg, borderBottomColor: colors.lineSubtle, borderBottomWidth: 1 },
   largeTextEvent: { flexDirection: 'column' },
-  dateRail: { width: 84, alignItems: 'flex-start', gap: space.xs },
+  dateRail: { width: 76, alignItems: 'flex-start', gap: space.xs },
   largeTextDateRail: { width: '100%' },
   eventMark: { width: 8, height: 8, borderRadius: radii.pill, backgroundColor: colors.lineStrong },
   currentMark: { backgroundColor: colors.apricot },
@@ -234,9 +222,4 @@ const styles = StyleSheet.create({
   readMoreLabel: { color: colors.indigoDeep, ...typeScale.control },
   focused: { borderColor: colors.focus },
   pressed: { opacity: 0.7 },
-  skeletonGroup: { minHeight: 228, gap: space.md, padding: space.mdLg, borderRadius: radii.lg, backgroundColor: colors.surface },
-  skeletonMeta: { width: '28%', height: 18, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
-  skeletonTitle: { width: '62%', height: 31, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
-  skeletonAnswer: { width: '100%', height: 36, marginTop: space.md, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
-  skeletonAnswerShort: { width: '74%', height: 36, borderRadius: radii.sm, backgroundColor: colors.surfaceMuted },
 });

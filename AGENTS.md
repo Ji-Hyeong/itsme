@@ -118,3 +118,8 @@
   잠금 파일을 재생성하고 `npm ci`·`expo install --check` 재현 검증을 복구했다.
 - 2026-07-29: Product Designer·Frontend·Reviewer를 UI 작업마다 실제 호출하고 두 모바일
   뷰포트 실화면 증거와 독립 승인을 요구하는 디자인 품질 게이트를 추가했다.
+- 2026-08-04: 스프린트 1 시각 품질을 Major 반려하고 고정 cover·반복 card·설문형 질문을
+  편집형 `문장 표지 / Living Folio` 구조로 교체하는 스프린트 2 디자인 명세를 승인했다.
+- 2026-08-04: `Living Folio`를 전체 핵심 화면에 구현하고 MaruBuri·자연 높이 folio·문장형
+  질문·동일 공개 renderer·축소 모션을 적용했다. 390×844·430×932 Web 핵심 흐름 16장을
+  Product Designer가 승인하고 Reviewer가 구현 Blocker·Major·Minor 0건으로 최종 승인했다.
