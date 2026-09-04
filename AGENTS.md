@@ -86,3 +86,13 @@
   보강하고, 전체 질문 진행·중복 제출 방지·기록 삭제와 모바일 키보드 대응을 추가했다.
 - 2026-07-20: 완료된 모든 작업을 검증 후 커밋·푸시하는 GitHub 동기화 원칙과 루트
   보안 중심 `.gitignore`를 추가했다.
+- 2026-07-22: 내부 알파 범위와 초대 계정 인증 정책을 확정하고 Kotlin·Spring Boot,
+  PostgreSQL·Flyway Backend, OpenAPI 계약, Expo HTTP 연동과 세션 복원을 구현했다.
+- 2026-07-22: 신규 기록 비공개 기본값, 공개 수정 시 자동 비공개, 소유자·공개 DTO 분리,
+  전체 버전 영구 삭제와 Client·Server GitHub Actions 검증을 추가했다.
+- 2026-07-22: 독립 보안 리뷰를 반영해 내부 ID 없는 공개 projection, 버전 충돌 방지,
+  1회용 공개 미리보기 승인, 계정 회수·로그인 제한·검색 색인 차단을 보강했다.
+- 2026-07-29: GitHub Actions 실환경 검증을 반영해 Client TypeScript 의존성을 호환 범위로
+  정렬하고 PostgreSQL JDBC 시간 파라미터를 명시적으로 변환하도록 보강했다.
+- 2026-07-29: Expo SDK 57 패치 의존성 정렬, EAS 환경별 공개 API 검증, Android·iOS
+  Maestro 핵심 여정과 실기기 체크리스트를 추가해 모바일 내부 알파 배포 게이트를 구체화했다.

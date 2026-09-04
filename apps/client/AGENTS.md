@@ -26,3 +26,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   전체 폭 질문·선택지·버튼, 균등 하단 탭과 모바일 키보드 인셋을 모든 화면에 적용했다.
 - 2026-07-20: 장식용 파스텔 배경과 과도한 타이포를 제거하고 인디고 중심 `Scene M` 팔레트,
   흰 카드·4px 범주 표식으로 정돈했으며 기록 삭제와 전체 질문 완료 흐름을 보강했다.
+- 2026-07-22: 초대 계정 로그인, Native SecureStore·Web sessionStorage 세션, OpenAPI 생성 타입,
+  실제 HTTP adapter와 mock 모드, 보호 라우트·401 재로그인 및 익명 공개 프로필 경계를 추가했다.
+- 2026-07-22: 공개 DTO에서 내부 기록 ID를 제거하고 버전 조건부 수정, token 기반 공개 전 미리보기,
+  멱등 삭제·계정 전환 격리, 배포 API fail-closed와 내부 알파 검색 색인 차단을 추가했다.
+- 2026-07-29: Expo SDK 57 호환 범위와 OpenAPI 생성 도구의 peer dependency를 함께 만족하도록
+  TypeScript를 5.9 계열로 정렬해 GitHub Actions의 재현 가능한 설치를 복구했다.
+- 2026-07-29: Expo SDK 57 패치 의존성을 정렬하고 EAS environment별 공개 API 사전 검증,
+  전 플랫폼 bundle export와 Android·iOS Maestro 내부 알파 스모크 워크플로를 추가했다.
