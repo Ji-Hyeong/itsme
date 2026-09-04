@@ -96,3 +96,5 @@
   정렬하고 PostgreSQL JDBC 시간 파라미터를 명시적으로 변환하도록 보강했다.
 - 2026-07-29: Expo SDK 57 패치 의존성 정렬, EAS 환경별 공개 API 검증, Android·iOS
   Maestro 핵심 여정과 실기기 체크리스트를 추가해 모바일 내부 알파 배포 게이트를 구체화했다.
+- 2026-09-04: 대형 내부 알파 변경을 Backend·Client·Living Folio 스택 PR로 분리하고,
+  Client의 Expo SDK 57 의존성을 현재 패치 호환 범위로 다시 정렬했다.

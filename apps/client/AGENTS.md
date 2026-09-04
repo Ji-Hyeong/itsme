@@ -34,3 +34,5 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   TypeScript를 5.9 계열로 정렬해 GitHub Actions의 재현 가능한 설치를 복구했다.
 - 2026-07-29: Expo SDK 57 패치 의존성을 정렬하고 EAS environment별 공개 API 사전 검증,
   전 플랫폼 bundle export와 Android·iOS Maestro 내부 알파 스모크 워크플로를 추가했다.
+- 2026-09-04: 분리된 Client PR이 독립적으로 재현되도록 Expo SDK 57 패치 의존성과
+  React Native Jest preset을 현재 호환 버전으로 정렬하고 전체 bundle export를 재검증했다.
