@@ -35,6 +35,7 @@ export default function RecordDetailScreen() {
   const [changedBecause, setChangedBecause] = useState('');
   const [nextStep, setNextStep] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [privacyNotice, setPrivacyNotice] = useState(false);
 
   if (loading) {
     return <AppShell><Screen><Body accessibilityRole="progressbar">기록을 불러오는 중…</Body></Screen></AppShell>;
@@ -55,8 +56,11 @@ export default function RecordDetailScreen() {
   const tone = categoryStyle[record.category];
 
   const submitUpdate = async () => {
+    const wasPublic = record.visibility === 'public';
     const saved = await updateRecord({
       recordId: record.id,
+      // 편집을 시작할 때 화면이 읽은 버전을 조건부 갱신 토큰으로 보내 덮어쓰기를 막는다.
+      expectedVersionId: current.id,
       answer,
       changedBecause: changedBecause || undefined,
       nextStep: nextStep || undefined,
@@ -65,6 +69,7 @@ export default function RecordDetailScreen() {
       setEditing(false);
       setChangedBecause('');
       setNextStep('');
+      setPrivacyNotice(wasPublic);
     }
   };
 
@@ -104,6 +109,14 @@ export default function RecordDetailScreen() {
           <View style={[styles.context, { backgroundColor: tone.soft }]}>
             <Meta>이 답을 남긴 이유</Meta>
             <Body style={styles.contextText}>{current.context}</Body>
+          </View>
+        ) : null}
+
+        {privacyNotice ? (
+          <View accessibilityLiveRegion="polite" style={styles.privacyNotice}>
+            <Heading>새 문장은 나만 보기로 돌아왔어요.</Heading>
+            <Body style={styles.muted}>달라진 내용을 공개하기 전에 실제 모습을 다시 확인해 주세요.</Body>
+            <ActionButton fullWidth onPress={() => router.push('/share')} tone="paper">미리보고 다시 공개하기</ActionButton>
           </View>
         ) : null}
 
@@ -159,10 +172,11 @@ export default function RecordDetailScreen() {
         {confirmingDelete ? (
           <View accessibilityLiveRegion="polite" style={styles.deleteConfirmation}>
             <Heading>이 기록을 삭제할까요?</Heading>
-            <Body style={styles.muted}>현재 답과 과거 버전이 모두 사라지고, 공개 중이라면 방문자 화면에서도 바로 내려가요.</Body>
+            <Text style={styles.deleteAnswer}>{current.answer}</Text>
+            <Body style={styles.muted}>현재 문장과 과거 버전이 모두 영구 삭제되며 복구할 수 없어요. 공개 중이라면 방문자 화면에서도 바로 내려가요.</Body>
             {error ? <Body style={styles.error}>{error}</Body> : null}
-            <ActionButton fullWidth loading={saving} onPress={() => void confirmDelete()} tone="danger">기록 삭제하기</ActionButton>
             <ActionButton disabled={saving} fullWidth onPress={() => { clearError(); setConfirmingDelete(false); }} tone="quiet">취소</ActionButton>
+            <ActionButton fullWidth loading={saving} onPress={() => void confirmDelete()} tone="danger">영구 삭제하기</ActionButton>
           </View>
         ) : null}
 
@@ -231,6 +245,8 @@ const styles = StyleSheet.create({
   error: { color: colors.error },
   history: { width: '100%', overflow: 'hidden', marginTop: space.xl, marginBottom: space.xxl, borderColor: colors.line, borderWidth: 1, borderRadius: 18, backgroundColor: colors.white },
   deleteConfirmation: { width: '100%', gap: space.md, marginTop: space.lg, padding: space.lg, borderColor: colors.error, borderWidth: 1, borderRadius: 18, backgroundColor: colors.errorSoft },
+  deleteAnswer: { width: '100%', color: colors.ink, fontFamily: fonts.serifBold, fontSize: 21, lineHeight: 32, padding: space.md, borderColor: colors.line, borderWidth: 1, borderRadius: 12, backgroundColor: colors.white },
+  privacyNotice: { width: '100%', gap: space.sm, marginTop: space.lg, padding: space.lg, borderColor: colors.brand, borderWidth: 1, borderRadius: 18, backgroundColor: colors.brandSoft },
   historyHeader: { width: '100%', flexDirection: 'column', alignItems: 'flex-start', gap: space.xs, padding: space.lg, borderBottomColor: colors.line, borderBottomWidth: 1, backgroundColor: colors.surfaceMuted },
   historyHeaderText: { color: colors.ink },
   historyItem: { width: '100%', flexDirection: 'column', alignItems: 'flex-start', gap: space.sm, padding: space.lg, borderBottomColor: colors.line, borderBottomWidth: 1 },

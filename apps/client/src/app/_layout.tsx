@@ -11,7 +11,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider, useAuth } from '@/state/AuthProvider';
 import { ItsmeProvider } from '@/state/ItsmeProvider';
+import { SessionGate } from '@/ui/SessionGate';
 import { colors } from '@/ui/tokens';
 
 void SplashScreen.preventAutoHideAsync();
@@ -37,10 +39,38 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ItsmeProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }} />
-      </ItsmeProvider>
+      <AuthProvider>
+        <ItsmeProvider>
+          <StatusBar style="dark" />
+          <AppNavigator />
+        </ItsmeProvider>
+      </AuthProvider>
     </SafeAreaProvider>
+  );
+}
+
+function AppNavigator() {
+  const { status } = useAuth();
+  const hasPrivateSession = status === 'authenticated' || status === 'expired';
+
+  return (
+    <SessionGate>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }}>
+        <Stack.Protected guard={hasPrivateSession}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="me" />
+          <Stack.Screen name="discover" />
+          <Stack.Screen name="timeline" />
+          <Stack.Screen name="share" />
+          <Stack.Screen name="preview" />
+          <Stack.Screen name="record/[id]" />
+          <Stack.Screen name="account" />
+        </Stack.Protected>
+        <Stack.Protected guard={status === 'anonymous'}>
+          <Stack.Screen name="auth" />
+        </Stack.Protected>
+        <Stack.Screen name="p/[slug]" />
+      </Stack>
+    </SessionGate>
   );
 }

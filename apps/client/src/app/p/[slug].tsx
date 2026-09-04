@@ -13,14 +13,13 @@ export default function PublicProfileScreen() {
   const params = useLocalSearchParams<{ slug?: string | string[] }>();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
   const { publicProfile, loading, error, refreshPublic } = useItsme();
-  const isKnownProfile = slug === 'me';
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <PaperBackground />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.brandRow}><Text style={styles.brandNote}>공개 프로필</Text></View>
-        {!isKnownProfile ? (
+        {!slug ? (
           <View style={styles.messageState}>
             <Heading>이 공개 프로필을 찾지 못했어요.</Heading>
             <Body>주소를 다시 확인해 주세요.</Body>
@@ -39,11 +38,6 @@ export default function PublicProfileScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-/** 프로토타입의 공개 slug를 실제 정적 경로로 생성해 공유 URL 직접 진입을 보장한다. */
-export function generateStaticParams() {
-  return [{ slug: 'me' }];
 }
 
 const styles = StyleSheet.create({

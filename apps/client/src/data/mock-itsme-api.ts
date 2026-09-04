@@ -11,8 +11,10 @@ import { questions } from '@/domain/questions';
 import {
   ItsmeApiError,
   type ItsmeApi,
+  type PublicProfilePreviewInput,
   type SaveAnswerInput,
   type UpdateRecordInput,
+  type UpdateVisibilityInput,
 } from '@/data/itsme-api';
 
 const NETWORK_DELAY_MS = 260;
@@ -27,9 +29,14 @@ function optionalText(value: string | undefined) {
 }
 
 export class MockItsmeApi implements ItsmeApi {
-  private recordSequence = 0;
+  private idSequence = 0;
+  private previewSequence = 0;
+  private readonly previewTokens = new Map<
+    string,
+    { expectedVersionId: string; recordId: string; visibility: Visibility }
+  >();
   private profile: OwnerProfile = OwnerProfileSchema.parse({
-    id: 'owner-me',
+    id: '6b133f38-4966-4c0f-91da-878830506a66',
     displayName: '지금의 나',
     intro: '아직 한 문장으로 정하지 않아도 괜찮아요.',
     records: [],
@@ -54,7 +61,7 @@ export class MockItsmeApi implements ItsmeApi {
 
   async getPublicProfile(slug: string) {
     await waitForPrototypeLatency();
-    if (slug !== 'me') {
+    if (slug !== 'my-scene') {
       throw new ItsmeApiError('NOT_FOUND', '공개 프로필을 찾지 못했어요.');
     }
     return this.projectPublicProfile();
@@ -72,7 +79,12 @@ export class MockItsmeApi implements ItsmeApi {
 
     const existing = this.profile.records.find((record) => record.questionId === input.questionId);
     if (existing) {
-      return this.updateRecord({ recordId: existing.id, answer, changedBecause: input.context });
+      return this.updateRecord({
+        recordId: existing.id,
+        expectedVersionId: getCurrentVersion(existing).id,
+        answer,
+        changedBecause: input.context,
+      });
     }
 
     const now = new Date().toISOString();
@@ -82,7 +94,7 @@ export class MockItsmeApi implements ItsmeApi {
         ...this.profile.records,
         {
           // URL에 질문 의미나 민감한 범주가 드러나지 않도록 기록 ID는 불투명하게 발급한다.
-          id: `record-${++this.recordSequence}-${Date.now().toString(36)}`,
+          id: this.createUuid(),
           questionId: question.id,
           category: question.category,
           title: question.title,
@@ -90,7 +102,7 @@ export class MockItsmeApi implements ItsmeApi {
           visibility: 'private',
           versions: [
             {
-              id: `version-${question.id}-${Date.now()}`,
+              id: this.createUuid(),
               answer,
               context: optionalText(input.context),
               recordedAt: now,
@@ -111,6 +123,12 @@ export class MockItsmeApi implements ItsmeApi {
     if (!target) {
       throw new ItsmeApiError('NOT_FOUND', '변경할 기록을 찾지 못했어요.');
     }
+    if (getCurrentVersion(target).id !== input.expectedVersionId) {
+      throw new ItsmeApiError(
+        'CONFLICT',
+        '다른 곳에서 이 기록이 먼저 바뀌었어요. 최신 내용을 확인한 뒤 다시 남겨 주세요.',
+      );
+    }
     if (!answer) {
       throw new ItsmeApiError('INVALID_INPUT', '지금의 답을 한 글자 이상 남겨 주세요.');
     }
@@ -121,11 +139,13 @@ export class MockItsmeApi implements ItsmeApi {
         record.id === input.recordId
           ? {
               ...record,
+              // 공개 중인 문장을 고치면 새 원문을 사용자가 다시 확인하기 전까지 공개하지 않는다.
+              visibility: 'private',
               // 과거 배열은 수정하지 않고 새 버전을 끝에 추가해 당시의 맥락과 순서를 보존한다.
               versions: [
                 ...record.versions,
                 {
-                  id: `version-${record.id}-${Date.now()}`,
+                  id: this.createUuid(),
                   answer,
                   changedBecause: optionalText(input.changedBecause),
                   nextStep: optionalText(input.nextStep),
@@ -139,13 +159,51 @@ export class MockItsmeApi implements ItsmeApi {
     return OwnerProfileSchema.parse(this.profile);
   }
 
-  async setVisibility(recordId: string, visibility: Visibility) {
+  async previewPublicProfile(input: PublicProfilePreviewInput) {
+    await waitForPrototypeLatency();
+
+    const target = this.profile.records.find((record) => record.id === input.recordId);
+    if (!target) {
+      throw new ItsmeApiError('NOT_FOUND', '미리 볼 기록을 찾지 못했어요.');
+    }
+
+    const previewToken = `mock-preview-${++this.previewSequence}`.padEnd(43, 'x');
+    this.previewTokens.set(previewToken, {
+      expectedVersionId: getCurrentVersion(target).id,
+      recordId: target.id,
+      visibility: input.visibility,
+    });
+
+    // 실제 저장 상태는 건드리지 않고, 서버가 공개를 가정해 만든 projection과 일회성 증표만 반환한다.
+    return {
+      previewToken,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      profile: this.projectPublicProfile(input),
+    };
+  }
+
+  async setVisibility(input: UpdateVisibilityInput) {
     await waitForPrototypeLatency();
     this.assertMutationCanProceed();
 
+    const { recordId, visibility } = input;
     const target = this.profile.records.find((record) => record.id === recordId);
     if (!target) {
       throw new ItsmeApiError('NOT_FOUND', '공개 범위를 바꿀 기록을 찾지 못했어요.');
+    }
+    if (visibility === 'public') {
+      const previewToken = input.previewToken;
+      const preview = previewToken ? this.previewTokens.get(previewToken) : undefined;
+      if (
+        !previewToken
+        || !preview
+        || preview.recordId !== recordId
+        || preview.visibility !== 'public'
+        || preview.expectedVersionId !== getCurrentVersion(target).id
+      ) {
+        throw new ItsmeApiError('CONFLICT', '공개 모습이 오래되었어요. 다시 미리 본 뒤 공개해 주세요.');
+      }
+      this.previewTokens.delete(previewToken);
     }
 
     this.profile = OwnerProfileSchema.parse({
@@ -163,7 +221,7 @@ export class MockItsmeApi implements ItsmeApi {
 
     const target = this.profile.records.find((record) => record.id === recordId);
     if (!target) {
-      throw new ItsmeApiError('NOT_FOUND', '삭제할 기록을 찾지 못했어요.');
+      return;
     }
 
     // 기록 객체 전체를 제거해 과거 버전과 공개 projection에도 민감한 원문이 남지 않게 한다.
@@ -171,7 +229,12 @@ export class MockItsmeApi implements ItsmeApi {
       ...this.profile,
       records: this.profile.records.filter((record) => record.id !== recordId),
     });
-    return OwnerProfileSchema.parse(this.profile);
+  }
+
+  private createUuid() {
+    // mock에서도 format: uuid 계약을 지켜 실제 HTTP 응답과 같은 식별자 형태를 사용한다.
+    const suffix = (++this.idSequence).toString(16).padStart(12, '0');
+    return `00000000-0000-4000-8000-${suffix}`;
   }
 
   private assertMutationCanProceed() {
@@ -181,11 +244,12 @@ export class MockItsmeApi implements ItsmeApi {
     }
   }
 
-  private projectPublicProfile(): PublicProfile {
+  private projectPublicProfile(override?: PublicProfilePreviewInput): PublicProfile {
     const publicRecords = this.profile.records
-      .filter((record) => record.visibility === 'public')
+      .filter((record) =>
+        record.id === override?.recordId ? override.visibility === 'public' : record.visibility === 'public',
+      )
       .map((record) => ({
-        id: record.id,
         category: record.category,
         title: record.title,
         answer: getCurrentVersion(record).answer,
