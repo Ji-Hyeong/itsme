@@ -1,37 +1,39 @@
 import { useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PublicProfileView } from '@/features/profile/PublicProfileView';
 import { useItsme } from '@/state/ItsmeProvider';
-import { ActionButton } from '@/ui/ActionButton';
 import { PaperBackground } from '@/ui/PaperBackground';
-import { Body, Heading } from '@/ui/Type';
-import { colors, fonts, layout, space } from '@/ui/tokens';
+import { FolioState, useResponsiveGutter } from '@/ui/Folio';
+import { colors, layout, space } from '@/ui/tokens';
 
 export default function PublicProfileScreen() {
   const params = useLocalSearchParams<{ slug?: string | string[] }>();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
   const { publicProfile, loading, error, refreshPublic } = useItsme();
+  const gutter = useResponsiveGutter();
+  const notFound = Boolean(error?.includes('찾') || error?.includes('존재하지'));
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <PaperBackground />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.brandRow}><Text style={styles.brandNote}>공개 프로필</Text></View>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: gutter }]}>
         {!slug ? (
-          <View style={styles.messageState}>
-            <Heading>이 공개 프로필을 찾지 못했어요.</Heading>
-            <Body>주소를 다시 확인해 주세요.</Body>
-          </View>
+          <FolioState
+            description="주소를 다시 확인해 주세요."
+            title="이 공개 프로필을 찾지 못했어요."
+            variant="permission"
+          />
         ) : error && !publicProfile ? (
-          <View accessibilityLiveRegion="assertive" style={styles.messageState}>
-            <Heading>프로필을 불러오지 못했어요.</Heading>
-            <Body>{error}</Body>
-            <ActionButton fullWidth onPress={() => void refreshPublic(slug ?? '')} tone="paper">다시 불러오기</ActionButton>
-          </View>
+          <FolioState
+            action={{ label: '다시 불러오기', onPress: () => void refreshPublic(slug) }}
+            description={error}
+            title={notFound ? '이 공개 프로필을 찾지 못했어요.' : '공개 프로필을 불러오지 못했어요.'}
+            variant={notFound ? 'permission' : 'error'}
+          />
         ) : loading || !publicProfile ? (
-          <Body accessibilityRole="progressbar">프로필을 불러오는 중…</Body>
+          <FolioState skeleton="cover" variant="loading" />
         ) : (
           <PublicProfileView profile={publicProfile} />
         )}
@@ -42,8 +44,5 @@ export default function PublicProfileScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.paper },
-  scrollContent: { flexGrow: 1, width: '100%', maxWidth: layout.maxContent, alignSelf: 'center', paddingHorizontal: layout.mobileGutter, paddingTop: space.md, paddingBottom: space.xxxl },
-  brandRow: { width: '100%', minHeight: 44, justifyContent: 'center', marginBottom: space.md, borderBottomColor: colors.line, borderBottomWidth: 1 },
-  brandNote: { color: colors.mutedInk, fontFamily: fonts.sansBold, fontSize: 13 },
-  messageState: { width: '100%', alignSelf: 'center', alignItems: 'stretch', gap: space.md, padding: space.lg, borderColor: colors.line, borderWidth: 1, borderRadius: 18, backgroundColor: colors.white },
+  scrollContent: { flexGrow: 1, width: '100%', maxWidth: layout.maxContent, alignSelf: 'center', paddingTop: space.md, paddingBottom: space.xxxl },
 });
