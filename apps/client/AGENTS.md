@@ -48,8 +48,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   `ShareProofDialog`·`PublicFolioRenderer`를 추가하고 전체 핵심 화면의 카드·큰 제목·고정 하단
   행동을 문장 중심의 자연 높이 흐름으로 교체했다.
 - 2026-08-04: 200% 확대 시 메타·공개 행 세로 적층, dialog Web focus trap, 질문명을 포함한
-  접근성 이름, 축소 모션 안전 복구를 추가하고 Expo 57 기대값에 맞춰
-  `react-native-gesture-handler`를 `~3.1.0`으로 정렬했다.
+  접근성 이름과 축소 모션 안전 복구를 추가했다.
 - 2026-08-04: 독립 QA를 반영해 확대 시 entry 메타·공개 상태를 세로로 쌓고 dialog Web focus
   trap·배경 차단 회귀 테스트, Scene Register 규격, 홈 중복 제거와 축소 모션 대응 reveal을 보강했다.
 - 2026-09-04: 분리된 Client PR이 독립적으로 재현되도록 Expo SDK 57 패치 의존성과
