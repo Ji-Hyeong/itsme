@@ -1,0 +1,26 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: itsme-server
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/itsme}
+    username: ${DB_USER:itsme}
+    password: ${DB_PASSWORD:itsme}
+  flyway:
+    locations: classpath:db/migration
+  jackson:
+    default-property-inclusion: non_null
+
+itsme:
+  session-ttl: ${SESSION_TTL:7d}
+  preview-ttl: ${PREVIEW_TTL:10m}
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+  bootstrap:
+    enabled: ${BOOTSTRAP_ENABLED:false}
+    email: ${BOOTSTRAP_EMAIL:}
+    password: ${BOOTSTRAP_PASSWORD:}
+    display-name: ${BOOTSTRAP_DISPLAY_NAME:}
+    slug: ${BOOTSTRAP_SLUG:}

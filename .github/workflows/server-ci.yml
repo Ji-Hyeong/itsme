@@ -1,0 +1,51 @@
+name: Server CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/server/**'
+      - 'contracts/openapi/**'
+      - '.github/workflows/server-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/server/**'
+      - 'contracts/openapi/**'
+      - '.github/workflows/server-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: itsme_test
+          POSTGRES_USER: itsme
+          POSTGRES_PASSWORD: itsme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U itsme -d itsme_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/server
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/itsme_test
+      SPRING_DATASOURCE_USERNAME: itsme
+      SPRING_DATASOURCE_PASSWORD: itsme
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Test server and migrations
+        run: ./gradlew clean test --no-daemon
