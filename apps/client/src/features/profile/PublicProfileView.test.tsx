@@ -21,7 +21,6 @@ describe('PublicProfileView', () => {
       displayName: '지금의 나',
       records: [
         {
-          id: 'record-favorite-color',
           category: 'preference',
           title: '좋아하는 색',
           answer: '이끼 초록',

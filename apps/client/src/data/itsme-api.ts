@@ -1,21 +1,31 @@
-import type { OwnerProfile, PublicProfile, Question, Visibility } from '@/domain/profile';
+import type { OwnerProfile, PublicProfile, Question } from '@/domain/profile';
+import type { components } from '@/generated/itsme-api';
 
-export type SaveAnswerInput = {
-  questionId: string;
-  answer: string;
-  context?: string;
+export type SaveAnswerInput = components['schemas']['CreateRecordRequest'];
+
+export type UpdateRecordInput = components['schemas']['UpdateRecordRequest'] & {
+  recordId: string;
 };
 
-export type UpdateRecordInput = {
+export type PublicProfilePreviewInput = components['schemas']['PublicProfilePreviewRequest'];
+export type PublicProfilePreviewResponse = components['schemas']['PublicProfilePreviewResponse'];
+
+export type UpdateVisibilityInput = components['schemas']['UpdateVisibilityRequest'] & {
   recordId: string;
-  answer: string;
-  changedBecause?: string;
-  nextStep?: string;
 };
 
 export class ItsmeApiError extends Error {
   constructor(
-    readonly code: 'NOT_FOUND' | 'INVALID_INPUT' | 'SAVE_FAILED',
+    readonly code:
+      | 'NOT_FOUND'
+      | 'INVALID_INPUT'
+      | 'CONFLICT'
+      | 'SAVE_FAILED'
+      | 'UNAUTHORIZED'
+      | 'FORBIDDEN'
+      | 'NETWORK'
+      | 'SERVER_ERROR'
+      | 'INVALID_RESPONSE',
     message: string,
   ) {
     super(message);
@@ -29,6 +39,7 @@ export interface ItsmeApi {
   getPublicProfile(slug: string): Promise<PublicProfile>;
   saveAnswer(input: SaveAnswerInput): Promise<OwnerProfile>;
   updateRecord(input: UpdateRecordInput): Promise<OwnerProfile>;
-  setVisibility(recordId: string, visibility: Visibility): Promise<OwnerProfile>;
-  deleteRecord(recordId: string): Promise<OwnerProfile>;
+  previewPublicProfile(input: PublicProfilePreviewInput): Promise<PublicProfilePreviewResponse>;
+  setVisibility(input: UpdateVisibilityInput): Promise<OwnerProfile>;
+  deleteRecord(recordId: string): Promise<void>;
 }
