@@ -11,6 +11,8 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 ## 프로젝트 변경 이력
 
+- 2026-09-05: Expo SDK 57 호환 목록 갱신에 맞춰 `expo`, `@expo/ui`,
+  `expo-router` 패치 버전을 정렬해 `main`의 의존성 검증을 복구했다.
 - 2026-07-14: Expo SDK 57 유니버설 앱, 계약 기반 mock, 핵심 자기 탐색·변화·공개
   프로토타입과 테스트를 추가했다.
 - 2026-07-14: 초기 오류 재시도, 공개 slug 검증, 방문자 화면 분리와 200% 확대 대응을 추가했다.
