@@ -34,5 +34,22 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
   TypeScript를 5.9 계열로 정렬해 GitHub Actions의 재현 가능한 설치를 복구했다.
 - 2026-07-29: Expo SDK 57 패치 의존성을 정렬하고 EAS environment별 공개 API 사전 검증,
   전 플랫폼 bundle export와 Android·iOS Maestro 내부 알파 스모크 워크플로를 추가했다.
+- 2026-08-03: semantic token과 `ScreenHeader`, `SceneCard`, `BottomActionBar`, `StatePanel`,
+  `BlockingDialog`, Pretendard 번들 폰트를 추가하고 핵심 화면을 390·430px 단일열과 200% 확대
+  규칙에 맞춰 재구성했다.
+- 2026-08-03: 공개 route 상태를 owner projection과 분리해 slug 전환 경쟁 상태를 제거하고,
+  공개 정책 카피·600자 counter·삭제 dialog와 관련 회귀 테스트·Web 시각 증거를 보강했다.
+- 2026-08-03: 공개 확인 dialog의 Web·Native 배경 차단 경계와 초기·복귀 focus를 보강하고,
+  공개 미리보기 전환 후 stack에 이전 modal이 남지 않도록 상태를 먼저 초기화했다.
+- 2026-08-03: Expo 57.0.9·React Native 0.86.2와 연관 패치 패키지를 정렬하고 잠금 파일을
+  깨끗하게 재생성해 CI의 `expo install --check`가 최신 호환 매트릭스를 통과하도록 했다.
+- 2026-08-04: `문장 표지 / Living Folio` 방향으로 warm paper token과 MaruBuri 번들 서체,
+  `FolioHeader`·`FolioCover`·`FolioEntry`·`PromptSheet`·`ChoiceList`·`VisibilityRow`·
+  `ShareProofDialog`·`PublicFolioRenderer`를 추가하고 전체 핵심 화면의 카드·큰 제목·고정 하단
+  행동을 문장 중심의 자연 높이 흐름으로 교체했다.
+- 2026-08-04: 200% 확대 시 메타·공개 행 세로 적층, dialog Web focus trap, 질문명을 포함한
+  접근성 이름과 축소 모션 안전 복구를 추가했다.
+- 2026-08-04: 독립 QA를 반영해 확대 시 entry 메타·공개 상태를 세로로 쌓고 dialog Web focus
+  trap·배경 차단 회귀 테스트, Scene Register 규격, 홈 중복 제거와 축소 모션 대응 reveal을 보강했다.
 - 2026-09-04: 분리된 Client PR이 독립적으로 재현되도록 Expo SDK 57 패치 의존성과
   React Native Jest preset을 현재 호환 버전으로 정렬하고 전체 bundle export를 재검증했다.

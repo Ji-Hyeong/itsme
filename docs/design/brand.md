@@ -91,7 +91,12 @@ Android adaptive icon의 설정 색상도 Indigo `#4457A6`과 일치해야 한�
 ## 모바일 화면 사용
 
 - 360px, 390px와 430px 네이티브 화면을 기준으로 하며 Web은 최대 480px 중앙 preview로만 사용한다.
-- 화면 배경은 Cloud 또는 White 단색을 사용하고 로고 뒤에 파스텔 glow나 그라데이션을 넣지 않는다.
+- 스프린트 2의 앱 canvas는 Paper Canvas `#F6F3EC`를 사용할 수 있다. 컬러 Scene M은 기존 규칙대로
+  White `#FFFFFF` 또는 Cloud `#F4F5F7`의 충분한 보호면 위에만 놓고, canvas에 직접 놓을 때는
+  Indigo 단색형을 사용한다.
+- UI 문장 서체는 `MaruBuri`, 조작 서체는 `Pretendard`를 사용할 수 있다. 워드마크 자체의
+  산세리프 골격과 `it’s` Regular·`ME` SemiBold 조합은 변경하지 않는다.
+- 로고 뒤에 파스텔 glow나 그라데이션을 넣지 않는다. 종이 질감은 로고 보호 여백 안에서 제거한다.
 - 모바일 header에서 기본 가로형을 사용할 때 보호 여백을 포함해 콘텐츠 폭을 넘지 않게 한다.
 - 32px 이하의 내비게이션, 로딩과 작은 상태 영역에서는 Scene M 단독형을 사용한다.
 

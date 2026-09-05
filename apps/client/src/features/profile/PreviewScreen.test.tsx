@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import PreviewScreen from '@/app/preview';
 
@@ -10,6 +11,7 @@ const mockRouter = {
 const mockSetVisibility = jest.fn();
 const mockClearVisibilityPreview = jest.fn();
 const mockClearError = jest.fn();
+const mockFocusTarget = jest.fn();
 const previewToken = 'p'.repeat(43);
 const previewProfile = {
   displayName: '지금의 나',
@@ -37,6 +39,7 @@ jest.mock('@/state/AuthProvider', () => ({
   useAuth: () => ({ user: { id: 'owner-me', slug: 'scene-me' } }),
 }));
 jest.mock('@/state/ItsmeProvider', () => ({ useItsme: () => mockItsmeState }));
+jest.mock('@/ui/focus-target', () => ({ focusTarget: (target: unknown) => mockFocusTarget(target) }));
 
 describe('공개 후보 미리보기 확정', () => {
   beforeEach(() => {
@@ -49,6 +52,10 @@ describe('공개 후보 미리보기 확정', () => {
 
     expect(screen.getByText('천천히 쉬는 법')).toBeTruthy();
     expect(mockSetVisibility).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockFocusTarget).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText('공개 전 미리보기. 다른 사람도 이 모습 그대로 봐요.')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('preview-scroll').props.contentContainerStyle).paddingTop).toBeGreaterThanOrEqual(5);
+    expect(StyleSheet.flatten(screen.getByTestId('preview-renderer-frame').props.style).flexGrow).toBe(1);
 
     fireEvent.press(screen.getByText('이대로 공개하기'));
 
@@ -66,10 +73,23 @@ describe('공개 후보 미리보기 확정', () => {
   test('취소하면 후보만 폐기하고 공개 mutation은 실행하지 않는다', async () => {
     const screen = await render(<PreviewScreen />);
 
-    fireEvent.press(screen.getByText('취소하고 선택으로 돌아가기'));
+    fireEvent.press(screen.getByText('선택으로 돌아가기'));
 
     expect(mockSetVisibility).not.toHaveBeenCalled();
     expect(mockClearVisibilityPreview).toHaveBeenCalled();
     expect(mockRouter.replace).toHaveBeenCalledWith('/share');
+  });
+
+  test('공개 기록이 없어도 방문자 renderer의 빈 상태를 한 번만 보여준다', async () => {
+    const originalRecords = [...previewProfile.records];
+    previewProfile.records.splice(0, previewProfile.records.length);
+
+    try {
+      const screen = await render(<PreviewScreen />);
+
+      expect(screen.getAllByText('공개한 문장은 아직 없어요.')).toHaveLength(1);
+    } finally {
+      previewProfile.records.splice(0, previewProfile.records.length, ...originalRecords);
+    }
   });
 });

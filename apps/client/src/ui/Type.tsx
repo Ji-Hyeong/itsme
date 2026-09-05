@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { Platform, StyleSheet, Text } from 'react-native';
 
-import { colors, fonts } from '@/ui/tokens';
+import { colors, typeScale } from '@/ui/tokens';
 
 type TextProps = ComponentProps<typeof Text> & { children: ReactNode };
 
@@ -10,60 +10,55 @@ const koreanBreakStyle = Platform.select({
   default: {},
 });
 
-export function Eyebrow({ style, ...props }: TextProps) {
-  return <Text {...props} style={[styles.eyebrow, koreanBreakStyle, style]} />;
+function TypedText({ style, ...props }: TextProps & { variant: keyof typeof styles }) {
+  const { variant, ...textProps } = props;
+  return <Text {...textProps} style={[styles[variant], koreanBreakStyle, style]} />;
 }
 
-export function Display({ style, ...props }: TextProps) {
-  return <Text {...props} style={[styles.display, koreanBreakStyle, style]} />;
+export function ProfileName(props: TextProps) {
+  return <TypedText {...props} variant="profileName" />;
 }
 
-export function Heading({ style, ...props }: TextProps) {
-  return <Text {...props} style={[styles.heading, koreanBreakStyle, style]} />;
+export function Question(props: TextProps) {
+  return <TypedText {...props} variant="question" />;
 }
 
-export function Body({ style, ...props }: TextProps) {
-  return <Text {...props} style={[styles.body, koreanBreakStyle, style]} />;
+export function ScreenTitle(props: TextProps) {
+  return <TypedText {...props} variant="screenTitle" />;
 }
 
-export function Meta({ style, ...props }: TextProps) {
-  return <Text {...props} style={[styles.meta, koreanBreakStyle, style]} />;
+export function SceneAnswer(props: TextProps) {
+  return <TypedText {...props} variant="sceneAnswer" />;
 }
+
+export function SectionTitle(props: TextProps) {
+  return <TypedText {...props} variant="sectionTitle" />;
+}
+
+export function Control(props: TextProps) {
+  return <TypedText {...props} variant="control" />;
+}
+
+export function Body(props: TextProps) {
+  return <TypedText {...props} variant="body" />;
+}
+
+export function Meta(props: TextProps) {
+  return <TypedText {...props} variant="meta" />;
+}
+
+// 점진적 화면 이전을 위해 기존 이름은 새 의미 토큰의 별칭으로만 유지한다.
+export const Eyebrow = Meta;
+export const Display = ScreenTitle;
+export const Heading = SectionTitle;
 
 const styles = StyleSheet.create({
-  eyebrow: {
-    color: colors.mutedInk,
-    fontFamily: fonts.sansBold,
-    fontSize: 13,
-    letterSpacing: -0.15,
-    lineHeight: 20,
-  },
-  display: {
-    color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 34,
-    letterSpacing: -1.5,
-    lineHeight: 45,
-  },
-  heading: {
-    color: colors.ink,
-    fontFamily: fonts.sansBold,
-    fontSize: 23,
-    letterSpacing: -0.8,
-    lineHeight: 33,
-  },
-  body: {
-    color: colors.ink,
-    fontFamily: fonts.sans,
-    fontSize: 16,
-    letterSpacing: -0.2,
-    lineHeight: 27,
-  },
-  meta: {
-    color: colors.mutedInk,
-    fontFamily: fonts.sans,
-    fontSize: 13,
-    letterSpacing: -0.1,
-    lineHeight: 21,
-  },
+  profileName: { color: colors.ink, ...typeScale.profileName },
+  question: { color: colors.ink, ...typeScale.question },
+  screenTitle: { color: colors.ink, ...typeScale.screenTitle },
+  sceneAnswer: { color: colors.ink, ...typeScale.sceneAnswer },
+  sectionTitle: { color: colors.ink, ...typeScale.sectionTitle },
+  body: { color: colors.ink, ...typeScale.body },
+  control: { color: colors.ink, ...typeScale.control },
+  meta: { color: colors.muted, ...typeScale.meta },
 });

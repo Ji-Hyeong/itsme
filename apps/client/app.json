@@ -29,9 +29,22 @@
     "plugins": [
       "expo-router",
       [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/MaruBuri-Regular.otf",
+            "./assets/fonts/MaruBuri-SemiBold.otf",
+            "./assets/fonts/Pretendard-Regular.otf",
+            "./assets/fonts/Pretendard-Medium.otf",
+            "./assets/fonts/Pretendard-SemiBold.otf",
+            "./assets/fonts/Pretendard-Bold.otf"
+          ]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F7F7F8",
+          "backgroundColor": "#F6F3EC",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }

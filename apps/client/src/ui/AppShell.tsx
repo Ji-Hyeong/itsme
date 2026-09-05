@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { ComponentProps, ReactNode } from 'react';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,7 +19,7 @@ const destinations: readonly { href: AppPath; icon: IconName; selectedIcon: Icon
   { href: '/share', icon: 'eye-outline', selectedIcon: 'eye', label: '공개' },
 ] as const;
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ backgroundBlocked = false, children }: { backgroundBlocked?: boolean; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -27,11 +27,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     () => destinations.find((item) => pathname.startsWith(item.href))?.href,
     [pathname],
   );
+  const webBackgroundBlocked = Platform.OS === 'web' && backgroundBlocked;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <PaperBackground />
-      <View style={styles.mobileFrame}>
+      <View
+        accessibilityElementsHidden={webBackgroundBlocked}
+        aria-hidden={webBackgroundBlocked}
+        importantForAccessibility={webBackgroundBlocked ? 'no-hide-descendants' : 'auto'}
+        // Native Modal은 자체가 배경 입력을 차단한다. 논리적 부모에 none을 주면 모달 버튼까지 차단될 수 있어 Web portal에만 적용한다.
+        pointerEvents={webBackgroundBlocked ? 'none' : 'auto'}
+        style={styles.mobileFrame}
+        testID="app-background">
         <View style={styles.content}>{children}</View>
         <View
           accessibilityLabel="주요 메뉴"
@@ -73,8 +81,8 @@ const styles = StyleSheet.create({
   mobileFrame: { flex: 1, width: '100%', maxWidth: layout.maxContent, backgroundColor: colors.paper },
   content: { flex: 1, minWidth: 0 },
   navigation: { borderTopColor: colors.line, borderTopWidth: 1, backgroundColor: colors.white },
-  navigationInner: { minHeight: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: space.sm },
-  navItem: { position: 'relative', flex: 1, minHeight: 58, alignItems: 'center', justifyContent: 'center', gap: 1, borderColor: 'transparent', borderWidth: 2, borderRadius: radii.md },
+  navigationInner: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: space.sm },
+  navItem: { position: 'relative', flex: 1, minHeight: 60, alignItems: 'center', justifyContent: 'center', gap: 1, borderColor: 'transparent', borderWidth: 2, borderRadius: radii.md },
   selectedIndicator: { position: 'absolute', top: -1, width: 28, height: 3, borderRadius: 2, backgroundColor: colors.brand },
   iconFrame: { width: 32, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill },
   navLabel: { color: colors.faintInk, fontFamily: fonts.sansMedium, fontSize: 11, lineHeight: 16 },
